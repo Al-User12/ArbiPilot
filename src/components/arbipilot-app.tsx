@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { arbitrumSepolia } from "viem/chains";
 import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, ShieldAlert, Cpu, Network, CheckCircle2, AlertTriangle, ArrowRight, Activity, Terminal } from "lucide-react";
 
 import { CardShell } from "@/components/card-shell";
 import { RegistryPanel } from "@/components/registry-panel";
@@ -12,30 +14,20 @@ import type { ExecuteResponsePayload, PlanResponsePayload } from "@/lib/agent/ty
 import { getPublicRuntimeEnv } from "@/lib/config/public-env";
 import { readJsonOrThrow } from "@/lib/http/client";
 
-function Badge({ label, tone }: { label: string; tone: "real" | "testnet" }) {
-  const className = {
-    real: "border-emerald-300/40 bg-emerald-500/10 text-emerald-100",
-    testnet: "border-cyan-300/40 bg-cyan-500/10 text-cyan-100",
-  }[tone];
+function StepBadge({ number, label, status }: { number: number; label: string; status: "pending" | "active" | "completed" }) {
+  const styles = {
+    pending: "text-slate-500 border-slate-800 bg-slate-900/40",
+    active: "text-cyan-300 border-cyan-500/50 bg-cyan-950/40 shadow-[0_0_15px_rgba(34,211,238,0.15)]",
+    completed: "text-emerald-300 border-emerald-500/50 bg-emerald-950/40 shadow-[0_0_10px_rgba(52,211,153,0.1)]",
+  };
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.14em] ${className}`}>
+    <div className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-widest transition-all ${styles[status]}`}>
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black/40 text-[10px]">
+        {status === "completed" ? <CheckCircle2 size={12} className="text-emerald-400" /> : number}
+      </span>
       {label}
-    </span>
-  );
-}
-
-function StepBadge({ label, active }: { label: string; active: boolean }) {
-  return (
-    <span
-      className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.14em] ${
-        active
-          ? "border-cyan-300/60 bg-cyan-500/20 text-cyan-100"
-          : "border-white/15 bg-white/5 text-slate-400"
-      }`}
-    >
-      {label}
-    </span>
+    </div>
   );
 }
 
@@ -98,9 +90,7 @@ export function ArbiPilotApp() {
   }
 
   async function handleExecute() {
-    if (!address || !plan?.supported || plan.parsedIntent.action !== "swap") {
-      return;
-    }
+    if (!address || !plan?.supported || plan.parsedIntent.action !== "swap") return;
 
     setExecuteLoading(true);
     setPlanError(null);
@@ -136,7 +126,6 @@ export function ArbiPilotApp() {
           value: BigInt(data.approvalTxRequest.value),
           chainId: data.approvalTxRequest.chainId,
         });
-
         setApprovalTxHash(approvalHash);
       }
 
@@ -155,201 +144,216 @@ export function ArbiPilotApp() {
     }
   }
 
+  const step1Status = plan ? "completed" : "active";
+  const step2Status = Boolean(swapTxHash) ? "completed" : (plan ? "active" : "pending");
+  const step3Status = Boolean(swapTxHash) ? "completed" : (executeLoading ? "active" : "pending");
+
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(14,116,144,0.22),rgba(2,6,23,1)_45%)] px-4 py-8 text-slate-100 md:px-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <header className="rounded-2xl border border-cyan-300/20 bg-slate-950/70 p-5 backdrop-blur-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-cyan-300/80">Arbitrum Agentic Bounty Demo</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">ArbiPilot</h1>
-              <p className="mt-2 text-sm text-slate-300">
-                Explain first, validate strictly, then execute deterministic allowlisted swaps on Arbitrum Sepolia.
-              </p>
-              <p className="mt-2 text-xs text-slate-400">
-                Wallet status: {isConnected ? "Connected" : "Disconnected"} | Chain: {isCorrectChain ? "Arbitrum Sepolia" : "Wrong network"}
-              </p>
+    <div className="min-h-screen flex flex-col font-sans relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/20 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-900/10 blur-[120px] pointer-events-none" />
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-slate-950/60 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+              <Cpu className="text-cyan-400" size={20} />
             </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-wide text-white uppercase font-display flex items-center gap-2">
+                ArbiPilot <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30">Beta</span>
+              </h1>
+              <p className="text-xs text-slate-400">Explain-Then-Execute • Arbitrum Sepolia</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {!publicEnv.walletConnectProjectId && (
+              <span className="hidden md:inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">
+                <AlertTriangle size={10} /> No WC Key
+              </span>
+            )}
             <WalletConnectButton />
           </div>
+        </div>
+      </header>
 
-          {!publicEnv.walletConnectProjectId ? (
-            <p className="mt-3 rounded-lg border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-              WalletConnect is not configured. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID for QR-based mobile wallets.
-            </p>
-          ) : null}
+      {/* Main Content */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-10 flex flex-col gap-8 relative z-10">
+        
+        {/* Progress Stepper */}
+        <div className="flex justify-center gap-3 overflow-x-auto pb-4 hide-scrollbar">
+          <StepBadge number={1} label="Intent & Validation" status={step1Status} />
+          <StepBadge number={2} label="Plan & Risk" status={step2Status} />
+          <StepBadge number={3} label="Execution" status={step3Status} />
+        </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge label="LLM PARSER (REAL)" tone="real" />
-            <Badge label="QUOTE (TESTNET REAL)" tone="testnet" />
-            <Badge label="EXECUTION (TESTNET REAL)" tone="testnet" />
+        {/* Console / Prompt Area */}
+        <section className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-emerald-400 to-transparent opacity-50" />
+          
+          <div className="mb-6 flex flex-col gap-2">
+            <h2 className="text-2xl md:text-3xl font-display font-light text-white flex items-center gap-3">
+              <Sparkles className="text-cyan-400" /> What would you like to do?
+            </h2>
+            <p className="text-slate-400 text-sm">Natural language intent on Arbitrum. LLM parses strictly, payload generation is deterministic.</p>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <StepBadge label="1. Parse + Validate" active={Boolean(plan)} />
-            <StepBadge label="2. Explain + Risk" active={Boolean(plan?.explanation)} />
-            <StepBadge label="3. Execute" active={Boolean(swapTxHash)} />
-          </div>
-        </header>
-
-        <CardShell
-          title="Trust Boundaries"
-          subtitle="LLM can parse intent only. It cannot select addresses, targets, or calldata."
-        >
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
-            <li>Supported action: swap only.</li>
-            <li>Supported chain: arbitrum-sepolia only.</li>
-            <li>Supported tokens: USDC and WETH only (ETH alias is normalized to WETH).</li>
-            <li>Execution payload is deterministic code-path output.</li>
-          </ul>
-        </CardShell>
-
-        <CardShell title="Prompt" subtitle="Natural language input for swap intent parsing">
-          <div className="space-y-3">
+          <div className="relative group">
             <textarea
+              className="w-full resize-none rounded-2xl bg-slate-900/60 border border-white/10 px-6 py-5 text-lg text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all min-h-[120px] font-sans"
               value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-cyan-400/60"
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="e.g. swap 10 USDC to ETH on Arbitrum with safe slippage"
             />
-            <div className="flex flex-wrap gap-3">
+            <div className="absolute bottom-4 right-4 flex gap-3">
+              {isConnected && !isCorrectChain && (
+                 <button
+                 type="button"
+                 onClick={() => switchChainAsync({ chainId: arbitrumSepolia.id })}
+                 disabled={isSwitching}
+                 className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-5 py-2.5 text-sm font-semibold text-amber-200 transition-all hover:bg-amber-500/20 disabled:opacity-50"
+               >
+                 <Network size={16} /> Switch to Sepolia
+               </button>
+              )}
               <button
                 type="button"
                 onClick={handlePlan}
                 disabled={planLoading || !prompt.trim()}
-                className="rounded-xl border border-cyan-300/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-cyan-500 text-slate-950 px-6 py-2.5 text-sm font-bold transition-all hover:bg-cyan-400 disabled:opacity-50 disabled:bg-slate-700 disabled:text-slate-400"
               >
-                {planLoading ? "Planning..." : "Generate Plan"}
+                {planLoading ? (
+                  <span className="flex items-center gap-2"><Activity size={16} className="animate-spin" /> Planning...</span>
+                ) : (
+                  <span className="flex items-center gap-2">Generate Plan <ArrowRight size={16} /></span>
+                )}
               </button>
-              {!isCorrectChain && isConnected ? (
-                <button
-                  type="button"
-                  onClick={() => switchChainAsync({ chainId: arbitrumSepolia.id })}
-                  disabled={isSwitching}
-                  className="rounded-xl border border-amber-300/40 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-100 disabled:opacity-50"
-                >
-                  Switch to Arbitrum Sepolia
-                </button>
-              ) : null}
             </div>
           </div>
-        </CardShell>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          <CardShell title="Intent">
-            {plan ? (
-              <pre className="overflow-x-auto rounded-lg bg-black/30 p-3 text-xs text-slate-200">
-                {JSON.stringify(plan.parsedIntent, null, 2)}
-              </pre>
-            ) : (
-              <p className="text-sm text-slate-500">No plan yet.</p>
-            )}
-          </CardShell>
-
-          <CardShell title="Execution Plan">
-            {plan ? (
-              <ol className="space-y-2 text-sm text-slate-200">
-                {plan.executionPlan.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-sm text-slate-500">No plan yet.</p>
-            )}
-          </CardShell>
-
-          <CardShell title="Risk Preview">
-            {plan ? (
-              <div className="space-y-3 text-sm text-slate-200">
-                <p>
-                  Level: <span className="font-semibold uppercase">{plan.riskPreview.level}</span>
-                </p>
-                <p>
-                  Est. Out: {plan.preview.estimatedAmountOut} {plan.parsedIntent.tokenOut}
-                </p>
-                <p>
-                  Min Out: {plan.preview.minAmountOut} {plan.parsedIntent.tokenOut}
-                </p>
-                <ul className="list-disc pl-5 text-slate-400">
-                  {plan.riskPreview.reasons.map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No risk preview yet.</p>
-            )}
-          </CardShell>
+          
+          {planError && !plan && (
+             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center gap-3 text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-sm">
+               <ShieldAlert size={18} className="text-rose-400" />
+               {planError}
+             </motion.div>
+          )}
         </section>
 
-        <CardShell title="Explain">
-          <p className="text-sm leading-relaxed text-slate-300">
-            {plan?.explanation ?? "Explanation appears after planning."}
-          </p>
-        </CardShell>
-
-        <CardShell title="Execute" subtitle="User-approved deterministic execution payload">
-          <div className="space-y-3 text-sm text-slate-300">
-            <button
-              type="button"
-              onClick={handleExecute}
-              disabled={!isConnected || !plan?.supported || executeLoading || isSending}
-              className="rounded-xl border border-emerald-300/40 bg-emerald-500/10 px-4 py-2 font-semibold text-emerald-100 disabled:opacity-50"
+        <AnimatePresence>
+          {plan && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
-              {executeLoading || isSending ? "Executing..." : "Approve (if needed) & Execute Swap"}
-            </button>
+              {/* Left Column: Parsed Intent & Plan Details */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                <CardShell title="Security & Explanation" className="border-t-2 border-t-cyan-500/50">
+                  <div className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed mb-6">
+                    {plan.explanation}
+                  </div>
+                  <div className="rounded-xl bg-black/40 border border-white/5 p-4">
+                    <div className="flex items-center gap-2 mb-3 text-xs uppercase tracking-widest text-slate-500">
+                      <Terminal size={14} /> Execution Sequence
+                    </div>
+                    <ol className="space-y-2 text-sm text-slate-300 font-mono">
+                      {plan.executionPlan.map((step, idx) => (
+                        <li key={idx} className="flex gap-3 items-start">
+                          <span className="text-cyan-600 mt-0.5">{`>`}</span> {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </CardShell>
 
-            {executionInfo ? (
-              <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                <p className="font-medium text-slate-100">{executionInfo.message}</p>
-                {executionInfo.warnings.length ? (
-                  <ul className="mt-2 list-disc pl-5 text-slate-400">
-                    {executionInfo.warnings.map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                ) : null}
+                {/* Optional Status / Execution log below */}
+                {(approvalTxHash || swapTxHash || planError) && (
+                  <CardShell title="Transaction Status" className="bg-slate-900/80">
+                    <div className="space-y-3 font-mono text-xs">
+                      {planError && <div className="text-rose-400">Error: {planError}</div>}
+                      {approvalTxHash && (
+                        <div className="flex items-center justify-between text-amber-300/90 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                          <span>Approval Hash: {approvalTxHash.substring(0, 16)}...</span>
+                          {approvalExplorerLink && <a href={approvalExplorerLink} target="_blank" rel="noreferrer" className="underline hover:text-amber-200">View</a>}
+                        </div>
+                      )}
+                      {swapTxHash && (
+                        <div className="flex items-center justify-between text-emerald-300/90 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
+                          <span>Swap Hash: {swapTxHash.substring(0, 16)}...</span>
+                          {swapExplorerLink && <a href={swapExplorerLink} target="_blank" rel="noreferrer" className="underline hover:text-emerald-200">View</a>}
+                        </div>
+                      )}
+                    </div>
+                  </CardShell>
+                )}
               </div>
-            ) : null}
 
-            {approvalTxHash ? (
-              <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 p-3">
-                <p className="text-amber-100">Approval Tx Hash: {approvalTxHash}</p>
-                {approvalExplorerLink ? (
-                  <a
-                    href={approvalExplorerLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-amber-300 underline"
+              {/* Right Column: Execution Dashboard */}
+              <div className="flex flex-col gap-6">
+                <CardShell title="Risk & Safety Guardrails" className="border-t-2 border-t-amber-500/50 bg-amber-950/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`p-2 rounded-lg ${plan.riskPreview.level === 'low' ? 'bg-emerald-500/20 text-emerald-400' : plan.riskPreview.level === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                      <ShieldAlert size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] uppercase tracking-widest text-slate-400">Risk Level</h4>
+                      <p className={`font-bold capitalize ${plan.riskPreview.level === 'low' ? 'text-emerald-400' : plan.riskPreview.level === 'medium' ? 'text-amber-400' : 'text-rose-400'}`}>{plan.riskPreview.level}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 mb-6">
+                    <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+                       <span className="text-slate-400">Est. Received</span>
+                       <span className="font-medium text-slate-100">{plan.preview.estimatedAmountOut} <span className="text-slate-500 text-xs">{plan.parsedIntent.tokenOut}</span></span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
+                       <span className="text-slate-400">Min. Received</span>
+                       <span className="font-medium text-slate-100">{plan.preview.minAmountOut} <span className="text-slate-500 text-xs">{plan.parsedIntent.tokenOut}</span></span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mb-6">
+                    <h4 className="text-xs uppercase tracking-widest text-slate-500">Validation Notes</h4>
+                    <ul className="space-y-1.5 list-disc list-inside text-xs text-slate-400">
+                      {plan.riskPreview.reasons.map((reason, idx) => (
+                        <li key={idx} className="leading-snug">{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExecute}
+                    disabled={!isConnected || !plan?.supported || executeLoading || isSending || Boolean(swapTxHash)}
+                    className="w-full relative group overflow-hidden rounded-xl bg-emerald-500 disabled:bg-slate-800 border-none py-3.5 px-4 font-bold text-slate-950 disabled:text-slate-500 shadow-[0_0_20px_rgba(52,211,153,0.2)] transition-all disabled:shadow-none hover:shadow-[0_0_30px_rgba(52,211,153,0.4)]"
                   >
-                    Open approval in explorer
-                  </a>
-                ) : null}
+                    <div className="relative z-10 flex items-center justify-center gap-2">
+                      {executeLoading || isSending ? (
+                         <><Activity size={18} className="animate-spin" /> Authorizing...</>
+                      ) : swapTxHash ? (
+                         <><CheckCircle2 size={18} /> Executed Successfully</>
+                      ) : (
+                         <><Sparkles size={18} /> Approve & Execute</>
+                      )}
+                    </div>
+                    {!executeLoading && !isSending && !swapTxHash && (
+                      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                    )}
+                  </button>
+                </CardShell>
+
+                {/* Minimal Registry Panel - Kept for dev/bounty integrity but styled sleek */}
+                <div className="mt-auto">
+                    <RegistryPanel />
+                </div>
               </div>
-            ) : null}
-
-            {swapTxHash ? (
-              <div className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 p-3">
-                <p className="text-cyan-100">Swap Tx Hash: {swapTxHash}</p>
-                {swapExplorerLink ? (
-                  <a
-                    href={swapExplorerLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-cyan-300 underline"
-                  >
-                    Open swap in explorer
-                  </a>
-                ) : null}
-              </div>
-            ) : null}
-
-            {planError ? <p className="text-rose-300">{planError}</p> : null}
-          </div>
-        </CardShell>
-
-        <RegistryPanel />
-      </div>
-    </main>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    </div>
   );
 }
+

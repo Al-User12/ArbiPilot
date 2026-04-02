@@ -17,6 +17,8 @@
   "dependencies": {
     "@tanstack/react-query": "^5.96.1",
     "agent0-sdk": "^1.7.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
     "next": "16.2.2",
     "openai": "^6.33.0",
     "react": "19.2.4",

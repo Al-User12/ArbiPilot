@@ -4,17 +4,21 @@ export function CardShell({
   title,
   subtitle,
   children,
+  className = "",
 }: {
-  title: string;
-  subtitle?: string;
+  title?: string;
+  subtitle?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-[0_0_0_1px_rgba(56,189,248,0.08)] backdrop-blur-sm">
-      <header className="mb-3">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-cyan-200/90">{title}</h3>
-        {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
-      </header>
+    <section className={`glass-panel rounded-2xl p-5 ${className}`}>
+      {(title || subtitle) && (
+        <header className="mb-4">
+          {title && <h3 className="text-sm font-semibold uppercase tracking-widest text-cyan-400 font-display">{title}</h3>}
+          {subtitle && <div className="mt-1.5 text-sm text-slate-400 leading-relaxed">{subtitle}</div>}
+        </header>
+      )}
       {children}
     </section>
   );
