@@ -1,0 +1,38 @@
+{
+  "name": "arbipilot",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "register:agent": "node scripts/register-agent.mjs"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.96.1",
+    "agent0-sdk": "^1.7.1",
+    "next": "16.2.2",
+    "openai": "^6.33.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "viem": "^2.47.6",
+    "wagmi": "^3.6.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
