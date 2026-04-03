@@ -9,6 +9,7 @@ import { getBalancesSnapshot } from "@/lib/chain/balances";
 import { getSwapQuote } from "@/lib/protocols/swap-quote";
 import { isApprovalRequiredForSwap } from "@/lib/protocols/swap-execute";
 import { buildSwapExplanation } from "@/lib/risk/explain";
+import { checkSwapPricingSanity } from "@/lib/risk/pricing-sanity";
 import { assessSwapRisk } from "@/lib/risk/risk-engine";
 import { getErrorMessage, jsonError } from "@/lib/http/errors";
 
@@ -203,6 +204,17 @@ export async function POST(request: Request) {
             error,
             `No viable route found for ${intent.tokenIn} -> ${intent.tokenOut} on allowlisted pools.`,
           ),
+        ),
+      );
+    }
+
+    const pricingSanity = await checkSwapPricingSanity({ intent, quote });
+    if (pricingSanity.available && pricingSanity.isOutlier) {
+      return NextResponse.json(
+        buildUnsupportedResponse(
+          intent,
+          pricingSanity.message ??
+            "Quoted output deviates too much from reference price. Execution is blocked for protection.",
         ),
       );
     }

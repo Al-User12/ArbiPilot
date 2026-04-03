@@ -46,6 +46,18 @@ const serverEnvSchema = z.object({
     )
     .optional(),
   ARBITRUM_SEPOLIA_EXTRA_TOKENS_JSON: z.string().optional(),
+  ARBITRUM_SEPOLIA_ETH_USD_FEED_ADDRESS: z
+    .custom<`0x${string}`>(
+      (value) => typeof value === "string" && isAddress(value),
+      "ARBITRUM_SEPOLIA_ETH_USD_FEED_ADDRESS must be a valid address",
+    )
+    .optional(),
+  MAX_PRICE_DEVIATION_BPS: z.coerce
+    .number()
+    .int()
+    .min(100, "MAX_PRICE_DEVIATION_BPS must be >= 100")
+    .max(50_000, "MAX_PRICE_DEVIATION_BPS must be <= 50000")
+    .optional(),
   REGISTRY_SIGNER_PRIVATE_KEY: z
     .string()
     .refine((value) => isHex(value) && value.length === 66, {

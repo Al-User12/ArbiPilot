@@ -92,6 +92,8 @@ Most wallet agents hide execution logic behind model output. ArbiPilot makes the
 | `ARBITRUM_SEPOLIA_USDC_ADDRESS` | Optional | Server | Override USDC allowlist address |
 | `ARBITRUM_SEPOLIA_WETH_ADDRESS` | Optional | Server | Override WETH allowlist address |
 | `ARBITRUM_SEPOLIA_EXTRA_TOKENS_JSON` | Optional | Server | Extra allowlisted tokens for auto pair/route discovery (`{"USDT":{"address":"0x...","decimals":6}}`) |
+| `ARBITRUM_SEPOLIA_ETH_USD_FEED_ADDRESS` | Optional | Server | ETH/USD reference feed for price sanity guard |
+| `MAX_PRICE_DEVIATION_BPS` | Optional | Server | Max allowed quote deviation from reference before blocking execution (default `3000`) |
 | `CAMELOT_SEPOLIA_SWAP_ROUTER_ADDRESS` | Optional | Server | Override Camelot router |
 | `CAMELOT_SEPOLIA_QUOTER_ADDRESS` | Optional | Server | Override Camelot quoter |
 | `REGISTRY_SIGNER_PRIVATE_KEY` | Optional (required for registration execution) | Server | Private key used by `register:agent` script |

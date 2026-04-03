@@ -7,6 +7,7 @@ import { validateParsedIntent } from "@/lib/agent/validator";
 import { CHAIN_CONFIG } from "@/lib/config/chains";
 import { getSwapQuote } from "@/lib/protocols/swap-quote";
 import { prepareDeterministicSwapExecution } from "@/lib/protocols/swap-execute";
+import { checkSwapPricingSanity } from "@/lib/risk/pricing-sanity";
 import { getErrorMessage, jsonError } from "@/lib/http/errors";
 
 function buildBlockedResponse(message: string, warnings: string[] = []): ExecuteResponsePayload {
@@ -47,6 +48,20 @@ export async function POST(request: Request) {
             error,
             `No viable route found for ${input.intent.tokenIn} -> ${input.intent.tokenOut} on allowlisted pools.`,
           ),
+        ),
+        { status: 400 },
+      );
+    }
+
+    const pricingSanity = await checkSwapPricingSanity({
+      intent: input.intent,
+      quote,
+    });
+    if (pricingSanity.available && pricingSanity.isOutlier) {
+      return NextResponse.json(
+        buildBlockedResponse(
+          pricingSanity.message ??
+            "Quoted output deviates too much from reference price. Execution is blocked for protection.",
         ),
         { status: 400 },
       );

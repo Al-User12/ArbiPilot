@@ -388,8 +388,8 @@ export async function prepareDeterministicSwapExecution(params: {
   return {
     mode: "router_swap",
     message: wrapTxRequest
-      ? "Prepared Camelot Sepolia swap. Execution sequence: auto-wrap ETH to WETH, optional approval, then swap."
-      : "Prepared real Camelot Sepolia swap calldata. Execute optional approval first, then swap.",
+      ? "Prepared optimized Camelot Sepolia swap. Execution sequence: auto-wrap ETH to WETH, optional approval, then swap."
+      : "Prepared optimized Camelot Sepolia swap calldata. Execute optional approval first, then swap.",
     warnings,
     wrapTxRequest,
     approvalTxRequest,
