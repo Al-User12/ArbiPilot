@@ -1,6 +1,7 @@
 import {
   concatHex,
   encodeFunctionData,
+  formatUnits,
   parseUnits,
   toHex,
   type Address,
@@ -271,6 +272,47 @@ export async function prepareDeterministicSwapExecution(params: {
     warnings.push(
       `ERC-20 approval tx is required before swap for ${intent.tokenIn}.`,
     );
+  }
+
+  try {
+    const [nativeBalanceRaw, approvalGas, swapGas] = await Promise.all([
+      client.getBalance({ address: account }),
+      approvalTxRequest
+        ? client.estimateGas({
+            account,
+            to: approvalTxRequest.to,
+            data: approvalTxRequest.data,
+            value: BigInt(approvalTxRequest.value),
+          })
+        : Promise.resolve(0n),
+      client.estimateGas({
+        account,
+        to: swapTxRequest.to,
+        data: swapTxRequest.data,
+        value: BigInt(swapTxRequest.value),
+      }),
+    ]);
+
+    const fallbackGasPrice = await client.getGasPrice();
+    const feePerGas = feeParams.maxFeePerGas
+      ? BigInt(feeParams.maxFeePerGas)
+      : feeParams.gasPrice
+        ? BigInt(feeParams.gasPrice)
+        : fallbackGasPrice;
+    const estimatedGasCost = (approvalGas + swapGas) * feePerGas;
+
+    if (nativeBalanceRaw < estimatedGasCost) {
+      return {
+        mode: "blocked",
+        message: `Insufficient gas balance on Arbitrum Sepolia. Detected ${formatUnits(nativeBalanceRaw, 18)} ETH, estimated required ~${formatUnits(estimatedGasCost, 18)} ETH for approval + swap.`,
+        warnings: [
+          "Top up ETH on Arbitrum Sepolia (not another network), then retry.",
+          ...warnings,
+        ],
+      };
+    }
+  } catch {
+    warnings.push("Gas preflight check skipped because estimation failed; wallet may still reject if ETH for gas is insufficient.");
   }
 
   return {

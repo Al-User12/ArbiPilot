@@ -45,14 +45,21 @@ export function assessSwapRisk(params: {
   let sufficientBalance = true;
 
   if (balances) {
-    const tokenBalance = balances[intent.tokenIn];
+    const tokenBalance = balances.tokens[intent.tokenIn];
     const available = tokenBalance?.raw ?? 0n;
     sufficientBalance = available >= amountInRaw;
     if (!sufficientBalance) {
       level = "high";
+      reasons.push(`Insufficient ${intent.tokenIn} balance for requested amount (${intent.amount}).`);
       reasons.push(
-        `Insufficient ${intent.tokenIn} balance for requested amount (${intent.amount}).`,
+        `Checked allowlisted ${intent.tokenIn} contract: ${allowlist[intent.tokenIn].address}. Detected balance: ${tokenBalance?.formatted ?? "0"} ${intent.tokenIn}.`,
       );
+
+      if (intent.tokenIn === "WETH" && balances.nativeEthRaw >= amountInRaw) {
+        reasons.push(
+          `You appear to have enough native ETH (${balances.nativeEthFormatted} ETH), but swap input is WETH. Please wrap ETH to WETH first.`,
+        );
+      }
     }
   }
 

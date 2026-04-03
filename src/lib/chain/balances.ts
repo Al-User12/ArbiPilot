@@ -19,7 +19,11 @@ export interface TokenBalance {
   formatted: string;
 }
 
-export type BalanceSnapshot = Record<string, TokenBalance>;
+export interface BalanceSnapshot {
+  tokens: Record<string, TokenBalance>;
+  nativeEthRaw: bigint;
+  nativeEthFormatted: string;
+}
 
 export async function getBalancesSnapshot(account: Address): Promise<BalanceSnapshot> {
   const client = getArbitrumSepoliaPublicClient();
@@ -36,8 +40,9 @@ export async function getBalancesSnapshot(account: Address): Promise<BalanceSnap
       }),
     ),
   );
+  const nativeEthRaw = await client.getBalance({ address: account });
 
-  return tokenEntries.reduce<BalanceSnapshot>((acc, [symbol, token], index) => {
+  const tokenBalances = tokenEntries.reduce<Record<string, TokenBalance>>((acc, [symbol, token], index) => {
     const raw = rawBalances[index];
     acc[symbol] = {
       symbol,
@@ -46,4 +51,10 @@ export async function getBalancesSnapshot(account: Address): Promise<BalanceSnap
     };
     return acc;
   }, {});
+
+  return {
+    tokens: tokenBalances,
+    nativeEthRaw,
+    nativeEthFormatted: formatUnits(nativeEthRaw, 18),
+  };
 }

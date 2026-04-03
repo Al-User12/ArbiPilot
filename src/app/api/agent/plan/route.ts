@@ -66,6 +66,31 @@ function mapValidationMessage(prompt: string, message: string) {
   return message;
 }
 
+function mapPlannerParseErrorMessage(prompt: string, error: ZodError) {
+  const lowerPrompt = prompt.toLowerCase();
+  const hasSwapHint =
+    lowerPrompt.includes("swap") ||
+    lowerPrompt.includes("buy") ||
+    lowerPrompt.includes("sell") ||
+    lowerPrompt.includes(" to ") ||
+    lowerPrompt.includes(" for ");
+
+  const hasAmountIssue = error.issues.some((issue) => issue.path.includes("amount"));
+  const hasTokenIssue =
+    error.issues.some((issue) => issue.path.includes("tokenIn")) ||
+    error.issues.some((issue) => issue.path.includes("tokenOut"));
+
+  if (hasSwapHint && hasAmountIssue) {
+    return "Swap amount was not detected. Please include a numeric amount, for example: swap 1 WETH to USDC.";
+  }
+
+  if (hasSwapHint && hasTokenIssue) {
+    return "Token symbols were not recognized. Please use uppercase symbols from the supported allowlist, for example: swap 1 WETH to USDC.";
+  }
+
+  return "I could not parse a complete swap intent. Try: swap 1 WETH to USDC with 50 bps slippage.";
+}
+
 function buildUnsupportedResponse(intent: ParsedIntent, message: string): PlanResponsePayload {
   return {
     supported: false,
@@ -126,9 +151,28 @@ export async function POST(request: Request) {
       return jsonError(400, "INVALID_JSON", "Request body must be valid JSON.");
     }
 
-    const input = PlanRequestSchema.parse(rawBody);
+    const parsedInput = PlanRequestSchema.safeParse(rawBody);
+    if (!parsedInput.success) {
+      return jsonError(400, "VALIDATION_ERROR", "Invalid request payload", parsedInput.error.issues);
+    }
 
-    const intent = await planUserPrompt(input.prompt);
+    const input = parsedInput.data;
+
+    let intent: ParsedIntent;
+    try {
+      intent = await planUserPrompt(input.prompt);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return jsonError(
+          400,
+          "VALIDATION_ERROR",
+          mapPlannerParseErrorMessage(input.prompt, error),
+          error.issues,
+        );
+      }
+      throw error;
+    }
+
     const validation = validateParsedIntent(intent);
 
     if (!validation.ok) {
