@@ -4,6 +4,8 @@ import { PlannerIntentSchema } from "@/lib/agent/schema";
 import type { ParsedIntent } from "@/lib/agent/types";
 import { getAtxpOpenAIClient, getAtxpRuntimeConfig } from "@/lib/agent/atxp-client";
 
+const PLANNER_FALLBACK_MODEL = "gpt-4.1";
+
 const PLANNER_SYSTEM_PROMPT = `You are a strict parser for an Arbitrum MVP agent.
 Output JSON only. No markdown, no commentary.
 Schema:
@@ -76,6 +78,39 @@ function extractContent(rawContent: unknown) {
   return null;
 }
 
+function getProviderErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown planner provider error";
+}
+
+function isAtxpAuthModelMismatch(message: string) {
+  return (
+    message.includes("x-api-key header is required") ||
+    message.includes("invalid x-api-key")
+  );
+}
+
+async function createPlannerCompletion(
+  model: string,
+  prompt: string,
+  client: ReturnType<typeof getAtxpOpenAIClient>,
+) {
+  return client.chat.completions.create({
+    model,
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: PLANNER_SYSTEM_PROMPT,
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+}
+
 export async function planUserPrompt(prompt: string): Promise<ParsedIntent> {
   const client = getAtxpOpenAIClient();
   const atxp = getAtxpRuntimeConfig();
@@ -87,24 +122,25 @@ export async function planUserPrompt(prompt: string): Promise<ParsedIntent> {
   };
 
   try {
-    completion = await client.chat.completions.create({
-      model: atxp.model,
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: PLANNER_SYSTEM_PROMPT,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+    completion = await createPlannerCompletion(atxp.model, prompt, client);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown planner provider error";
-    throw new Error(`ATXP planner request failed: ${message}`);
+    const primaryMessage = getProviderErrorMessage(error);
+
+    if (
+      atxp.model !== PLANNER_FALLBACK_MODEL &&
+      isAtxpAuthModelMismatch(primaryMessage)
+    ) {
+      try {
+        completion = await createPlannerCompletion(PLANNER_FALLBACK_MODEL, prompt, client);
+      } catch (fallbackError) {
+        const fallbackMessage = getProviderErrorMessage(fallbackError);
+        throw new Error(
+          `ATXP planner request failed: ${primaryMessage}; fallback(${PLANNER_FALLBACK_MODEL}) failed: ${fallbackMessage}`,
+        );
+      }
+    } else {
+      throw new Error(`ATXP planner request failed: ${primaryMessage}`);
+    }
   }
 
   const content = extractContent(completion.choices?.[0]?.message?.content);
