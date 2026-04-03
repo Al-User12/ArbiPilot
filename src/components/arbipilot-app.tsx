@@ -9,6 +9,7 @@ import { RegistryPanel } from "@/components/registry-panel";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { ExecuteResponseSchema, PlanResponseSchema } from "@/lib/agent/schema";
 import type { ExecuteResponsePayload, PlanResponsePayload } from "@/lib/agent/types";
+import { getPublicRuntimeEnv } from "@/lib/config/public-env";
 import { readJsonOrThrow } from "@/lib/http/client";
 
 function Badge({ label, tone }: { label: string; tone: "real" | "testnet" }) {
@@ -53,6 +54,7 @@ export function ArbiPilotApp() {
   const [swapTxHash, setSwapTxHash] = useState<`0x${string}` | null>(null);
 
   const isCorrectChain = chainId === arbitrumSepolia.id;
+  const publicEnv = getPublicRuntimeEnv();
 
   const approvalExplorerLink = useMemo(() => {
     if (!approvalTxHash || !executionInfo?.explorerBaseUrl) return null;
@@ -170,6 +172,12 @@ export function ArbiPilotApp() {
             </div>
             <WalletConnectButton />
           </div>
+
+          {!publicEnv.walletConnectProjectId ? (
+            <p className="mt-3 rounded-lg border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+              WalletConnect is not configured. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID for QR-based mobile wallets.
+            </p>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Badge label="LLM PARSER (REAL)" tone="real" />
