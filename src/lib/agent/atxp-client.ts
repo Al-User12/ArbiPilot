@@ -16,6 +16,9 @@ export function getAtxpOpenAIClient() {
   cachedClient = new OpenAI({
     apiKey: atxp.ATXP_API_KEY,
     baseURL: atxp.OPENAI_BASE_URL,
+    defaultHeaders: {
+      "x-api-key": atxp.ATXP_API_KEY,
+    },
     timeout: 20_000,
   });
 
