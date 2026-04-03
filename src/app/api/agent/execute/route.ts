@@ -37,7 +37,29 @@ export async function POST(request: Request) {
       });
     }
 
-    const quote = await getSwapQuote(input.intent);
+    let quote: Awaited<ReturnType<typeof getSwapQuote>>;
+    try {
+      quote = await getSwapQuote(input.intent);
+    } catch (error) {
+      return NextResponse.json(
+        buildBlockedResponse(
+          getErrorMessage(
+            error,
+            `No viable route found for ${input.intent.tokenIn} -> ${input.intent.tokenOut} on allowlisted pools.`,
+          ),
+        ),
+        { status: 400 },
+      );
+    }
+
+    if (quote.hopCount > 1) {
+      return NextResponse.json(
+        buildBlockedResponse(
+          `Route was auto-detected as multi-hop (${quote.routePath.join(" -> ")}), but this MVP executes single-hop swaps only.`,
+        ),
+        { status: 400 },
+      );
+    }
 
     const execution = await prepareDeterministicSwapExecution({
       intent: input.intent,

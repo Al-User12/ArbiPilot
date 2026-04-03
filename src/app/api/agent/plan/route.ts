@@ -7,6 +7,7 @@ import type { ParsedIntent, PlanResponsePayload } from "@/lib/agent/types";
 import { validateParsedIntent } from "@/lib/agent/validator";
 import { getBalancesSnapshot } from "@/lib/chain/balances";
 import { getSwapQuote } from "@/lib/protocols/swap-quote";
+import { isApprovalRequiredForSwap } from "@/lib/protocols/swap-execute";
 import { buildSwapExplanation } from "@/lib/risk/explain";
 import { assessSwapRisk } from "@/lib/risk/risk-engine";
 import { getErrorMessage, jsonError } from "@/lib/http/errors";
@@ -147,16 +148,51 @@ export async function POST(request: Request) {
       );
     }
 
-    const quote = await getSwapQuote(intent);
+    let quote: Awaited<ReturnType<typeof getSwapQuote>>;
+    try {
+      quote = await getSwapQuote(intent);
+    } catch (error) {
+      return NextResponse.json(
+        buildUnsupportedResponse(
+          intent,
+          getErrorMessage(
+            error,
+            `No viable route found for ${intent.tokenIn} -> ${intent.tokenOut} on allowlisted pools.`,
+          ),
+        ),
+      );
+    }
+
+    if (quote.hopCount > 1) {
+      return NextResponse.json(
+        buildUnsupportedResponse(
+          intent,
+          `Route was auto-detected as multi-hop (${quote.routePath.join(" -> ")}), but this MVP executes single-hop swaps only.`,
+        ),
+      );
+    }
 
     const balances = input.walletAddress
       ? await getBalancesSnapshot(input.walletAddress)
       : null;
 
+    let approvalRequired = false;
+    if (input.walletAddress) {
+      try {
+        approvalRequired = await isApprovalRequiredForSwap({
+          intent,
+          account: input.walletAddress,
+        });
+      } catch {
+        approvalRequired = false;
+      }
+    }
+
     const risk = assessSwapRisk({
       intent,
       quote,
       balances,
+      approvalRequired,
     });
 
     const explanation = buildSwapExplanation({

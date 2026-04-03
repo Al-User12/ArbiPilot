@@ -1,7 +1,7 @@
 import { parseUnits } from "viem";
 
 import type { ParsedIntent, ValidationResult } from "@/lib/agent/types";
-import { MAX_SAFE_SLIPPAGE_BPS } from "@/lib/config/allowlist";
+import { getTokenAllowlist, MAX_SAFE_SLIPPAGE_BPS } from "@/lib/config/allowlist";
 
 const MAX_ALLOWED_AMOUNT = 1_000_000;
 
@@ -45,7 +45,8 @@ export function validateParsedIntent(intent: ParsedIntent): ValidationResult {
   }
 
   try {
-    parseUnits(intent.amount, intent.tokenIn === "USDC" ? 6 : 18);
+    const allowlist = getTokenAllowlist();
+    parseUnits(intent.amount, allowlist[intent.tokenIn].decimals);
   } catch {
     return { ok: false, reason: "Amount precision is invalid for selected token." };
   }

@@ -9,8 +9,9 @@ export function assessSwapRisk(params: {
   intent: SwapIntent;
   quote: SwapQuote;
   balances?: BalanceSnapshot | null;
+  approvalRequired?: boolean;
 }): RiskPreview {
-  const { intent, quote, balances } = params;
+  const { intent, quote, balances, approvalRequired = false } = params;
 
   const reasons: string[] = [];
   let level: RiskPreview["level"] = "low";
@@ -26,7 +27,6 @@ export function assessSwapRisk(params: {
     reasons.push("Quoter returned zero output for this amount.");
   }
 
-  const approvalRequired = true; // USDC/WETH are ERC-20; router allowance is required.
   if (approvalRequired && level === "low") {
     level = "medium";
     reasons.push("Input token approval for Camelot router is required before swap.");

@@ -72,6 +72,28 @@ export interface SwapExecutionPreparation {
   txRequest?: PreparedTxRequest;
 }
 
+export async function isApprovalRequiredForSwap(params: {
+  intent: SwapIntent;
+  account: Address;
+}) {
+  const { intent, account } = params;
+  const client = getArbitrumSepoliaPublicClient();
+  const allowlist = getTokenAllowlist();
+  const contracts = getCamelotContracts();
+
+  const tokenIn = allowlist[intent.tokenIn];
+  const amountInRaw = parseUnits(intent.amount, tokenIn.decimals);
+
+  const allowance = await client.readContract({
+    address: tokenIn.address,
+    abi: erc20AllowanceAbi,
+    functionName: "allowance",
+    args: [account, contracts.swapRouter],
+  });
+
+  return allowance < amountInRaw;
+}
+
 function applyFeeBuffer(value: bigint) {
   return (value * 12n) / 10n + 1n;
 }
@@ -131,14 +153,7 @@ export async function prepareDeterministicSwapExecution(params: {
   const tokenOut = allowlist[intent.tokenOut];
   const amountInRaw = parseUnits(intent.amount, tokenIn.decimals);
 
-  const allowance = await client.readContract({
-    address: tokenIn.address,
-    abi: erc20AllowanceAbi,
-    functionName: "allowance",
-    args: [account, contracts.swapRouter],
-  });
-
-  const approvalRequired = allowance < amountInRaw;
+  const approvalRequired = await isApprovalRequiredForSwap({ intent, account });
   const feeParams = await getPreparedFeeParams();
 
   const approvalTxRequest = approvalRequired
@@ -181,6 +196,7 @@ export async function prepareDeterministicSwapExecution(params: {
 
   const warnings = [
     `Real router calldata is generated from allowlisted Camelot Sepolia router ${contracts.swapRouter}.`,
+    `Selected route: ${quote.routePath.join(" -> ")} (${quote.hopCount} hop${quote.hopCount > 1 ? "s" : ""}).`,
   ];
 
   if (approvalRequired) {

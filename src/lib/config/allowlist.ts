@@ -84,8 +84,5 @@ export function getCamelotContracts(): CamelotContracts {
 }
 
 export function isSupportedPair(tokenIn: SupportedTokenSymbol, tokenOut: SupportedTokenSymbol) {
-  return (
-    (tokenIn === "WETH" && tokenOut === "USDC") ||
-    (tokenIn === "USDC" && tokenOut === "WETH")
-  );
+  return tokenIn !== tokenOut;
 }

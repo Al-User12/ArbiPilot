@@ -1,8 +1,8 @@
 import { formatUnits, parseUnits } from "viem";
 
-import type { SwapIntent } from "@/lib/agent/types";
+import type { SupportedToken, SwapIntent } from "@/lib/agent/types";
 import { getArbitrumSepoliaPublicClient } from "@/lib/chain/client";
-import { getCamelotContracts, getTokenAllowlist, isSupportedPair } from "@/lib/config/allowlist";
+import { getCamelotContracts, getTokenAllowlist } from "@/lib/config/allowlist";
 
 const quoterAbi = [
   {
@@ -36,6 +36,8 @@ export interface SwapQuote {
   minAmountOutFormatted: string;
   priceImpactBps: number;
   poolFeeBps: number;
+  routePath: SupportedToken[];
+  hopCount: number;
 }
 
 export interface SwapQuoteAdapter {
@@ -46,29 +48,94 @@ export interface SwapQuoteAdapter {
 class CamelotQuoterAdapter implements SwapQuoteAdapter {
   name = "camelot-quoter" as const;
 
-  async getQuote(intent: SwapIntent): Promise<SwapQuote> {
-    if (!isSupportedPair(intent.tokenIn, intent.tokenOut)) {
-      throw new Error("Unsupported pair for Camelot quote adapter");
-    }
-
+  private async quoteSingleHop(
+    tokenInAddress: `0x${string}`,
+    tokenOutAddress: `0x${string}`,
+    amountInRaw: bigint,
+  ) {
     const client = getArbitrumSepoliaPublicClient();
-    const allowlist = getTokenAllowlist();
     const contracts = getCamelotContracts();
-
-    const tokenIn = allowlist[intent.tokenIn];
-    const tokenOut = allowlist[intent.tokenOut];
-
-    const amountInRaw = parseUnits(intent.amount, tokenIn.decimals);
 
     const { result } = await client.simulateContract({
       address: contracts.quoter,
       abi: quoterAbi,
       functionName: "quoteExactInputSingle",
-      args: [tokenIn.address, tokenOut.address, amountInRaw, 0n],
+      args: [tokenInAddress, tokenOutAddress, amountInRaw, 0n],
       account: ZERO_ADDRESS,
     });
 
-    const [amountOutRaw, fee] = result;
+    return result;
+  }
+
+  async getQuote(intent: SwapIntent): Promise<SwapQuote> {
+    const allowlist = getTokenAllowlist();
+    const tokenIn = allowlist[intent.tokenIn];
+    const tokenOut = allowlist[intent.tokenOut];
+    const amountInRaw = parseUnits(intent.amount, tokenIn.decimals);
+
+    const candidates: SupportedToken[][] = [[intent.tokenIn, intent.tokenOut]];
+    const intermediateTokens = (Object.keys(allowlist) as SupportedToken[]).filter(
+      (symbol) => symbol !== intent.tokenIn && symbol !== intent.tokenOut,
+    );
+
+    for (const middle of intermediateTokens) {
+      candidates.push([intent.tokenIn, middle, intent.tokenOut]);
+    }
+
+    let best:
+      | {
+          amountOutRaw: bigint;
+          feeBps: number;
+          routePath: SupportedToken[];
+        }
+      | null = null;
+
+    for (const routePath of candidates) {
+      try {
+        let currentAmount = amountInRaw;
+        let accumulatedFeeBps = 0;
+
+        for (let i = 0; i < routePath.length - 1; i += 1) {
+          const from = allowlist[routePath[i]];
+          const to = allowlist[routePath[i + 1]];
+          const [hopAmountOutRaw, hopFee] = await this.quoteSingleHop(
+            from.address,
+            to.address,
+            currentAmount,
+          );
+
+          if (hopAmountOutRaw <= 0n) {
+            currentAmount = 0n;
+            break;
+          }
+
+          currentAmount = hopAmountOutRaw;
+          accumulatedFeeBps += Number(hopFee);
+        }
+
+        if (currentAmount <= 0n) {
+          continue;
+        }
+
+        if (!best || currentAmount > best.amountOutRaw) {
+          best = {
+            amountOutRaw: currentAmount,
+            feeBps: accumulatedFeeBps,
+            routePath,
+          };
+        }
+      } catch {
+        // Route candidate is not viable; continue with next candidate.
+      }
+    }
+
+    if (!best) {
+      throw new Error(
+        `No viable swap route found for ${intent.tokenIn} -> ${intent.tokenOut} on Camelot Sepolia.`,
+      );
+    }
+
+    const amountOutRaw = best.amountOutRaw;
     const minAmountOutRaw = (amountOutRaw * BigInt(10_000 - intent.slippageBps)) / 10_000n;
 
     return {
@@ -80,7 +147,9 @@ class CamelotQuoterAdapter implements SwapQuoteAdapter {
       amountOutFormatted: formatUnits(amountOutRaw, tokenOut.decimals),
       minAmountOutFormatted: formatUnits(minAmountOutRaw, tokenOut.decimals),
       priceImpactBps: 0,
-      poolFeeBps: Number(fee),
+      poolFeeBps: best.feeBps,
+      routePath: best.routePath,
+      hopCount: best.routePath.length - 1,
     };
   }
 }
