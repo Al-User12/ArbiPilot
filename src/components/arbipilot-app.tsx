@@ -308,13 +308,13 @@ export function ArbiPilotApp() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]">
-                    <div className="text-xs font-semibold text-slate-500 mb-1">Estimated Output</div>
-                    <div className="text-2xl font-semibold text-slate-100">{plan.preview.estimatedAmountOut} <span className="text-sm text-slate-500">{plan.parsedIntent.tokenOut}</span></div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] min-w-0">
+                    <div className="text-xs font-semibold text-slate-500 mb-1 truncate">Estimated Output</div>
+                    <div className="text-2xl font-semibold text-slate-100 break-all">{plan.preview.estimatedAmountOut} <span className="text-sm text-slate-500 whitespace-nowrap">{plan.parsedIntent.tokenOut}</span></div>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]">
-                    <div className="text-xs font-semibold text-slate-500 mb-1">Minimum Guaranteed</div>
-                    <div className="text-xl font-medium text-slate-300 mt-1">{plan.preview.minAmountOut} <span className="text-sm text-slate-500">{plan.parsedIntent.tokenOut}</span></div>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] min-w-0">
+                    <div className="text-xs font-semibold text-slate-500 mb-1 truncate">Minimum Guaranteed</div>
+                    <div className="text-xl font-medium text-slate-300 mt-1 break-all">{plan.preview.minAmountOut} <span className="text-sm text-slate-500 whitespace-nowrap">{plan.parsedIntent.tokenOut}</span></div>
                   </div>
                 </div>
 
