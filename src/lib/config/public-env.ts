@@ -1,10 +1,8 @@
 import { z } from "zod";
 
 const publicRuntimeEnvSchema = z.object({
-  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z
-    .string()
-    .min(1, "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is required"),
-  NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL"),
+  NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL").optional(),
 });
 
 export interface PublicRuntimeEnv {
@@ -29,8 +27,8 @@ export function getPublicRuntimeEnv(): PublicRuntimeEnv {
 
   if (parsed.success) {
     cached = {
-      walletConnectProjectId: parsed.data.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
-      appUrl: parsed.data.NEXT_PUBLIC_APP_URL,
+      walletConnectProjectId: parsed.data.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? null,
+      appUrl: parsed.data.NEXT_PUBLIC_APP_URL ?? null,
       isValid: true,
       errors: [],
     };

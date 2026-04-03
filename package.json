@@ -15,6 +15,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.96.1",
     "agent0-sdk": "^1.7.1",
     "next": "16.2.2",
@@ -22,7 +23,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "viem": "^2.47.6",
-    "wagmi": "^3.6.0",
+    "wagmi": "^2.19.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
