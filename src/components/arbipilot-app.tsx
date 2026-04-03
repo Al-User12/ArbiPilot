@@ -17,7 +17,7 @@ import { readJsonOrThrow } from "@/lib/http/client";
 function StepBadge({ number, label, status }: { number: number; label: string; status: "pending" | "active" | "completed" }) {
   const isCompleted = status === "completed";
   const isActive = status === "active";
-  
+
   return (
     <div className={`flex items-center gap-2 ${isActive ? "text-slate-100" : isCompleted ? "text-emerald-400" : "text-slate-500"}`}>
       <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium border ${isActive ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]" : isCompleted ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-white/[0.05] border-white/[0.05] text-slate-500"}`}>
@@ -141,7 +141,7 @@ export function ArbiPilotApp() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans relative selection:bg-cyan-500/30 selection:text-white">
-      
+
       <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#030305]/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -164,34 +164,61 @@ export function ArbiPilotApp() {
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12 flex flex-col gap-10">
-        
+
         {/* Hero Narrative & Positioning */}
         {!plan && (
-          <div className="max-w-3xl flex flex-col gap-5 pt-8 pb-4 animate-fade-in-up">
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-100 leading-tight drop-shadow-sm">
-              Explain-first AI Execution for Arbitrum.
-            </h2>
-            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl">
-              Describe your objective in natural language. ArbiPilot parses your intent into deterministic actions, fully explains the process, and guarantees execution safety before you ever sign a transaction.
-            </p>
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+            }}
+            className="max-w-3xl flex flex-col gap-6 pt-10 pb-6"
+          >
+            <motion.h2 
+              variants={{
+                hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+                visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="text-[2.5rem] md:text-[3.25rem] font-medium tracking-tight text-white leading-[1.15] drop-shadow-sm"
+            >
+              Share your intent.<br className="hidden md:block" />
+              <span className="text-slate-400 font-light">We'll craft the optimal execution strategy.</span>
+            </motion.h2>
+            <motion.p 
+              variants={{
+                hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+                visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="text-[1.1rem] text-slate-400/90 leading-[1.7] max-w-2xl font-light tracking-wide lg:pr-8"
+            >
+              ArbiPilot turns your natural language into a highly secure, deterministic blueprint. We verify the risks and explain every step transparently, long before you are ever asked to sign a transaction.
+            </motion.p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/[0.04] text-sm text-slate-400 font-medium">
-               <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.6)]" /> 1. Connect Wallet</div>
-               <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.6)]" /> 2. State Objective</div>
-               <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.6)]" /> 3. Review AI Audit</div>
-               <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.6)]" /> 4. Approve Route</div>
-            </div>
-          </div>
+            <motion.div 
+              variants={{
+                hidden: { opacity: 0, y: 12 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
+              }}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-6 border-t border-white/[0.04] text-[13px] text-slate-400 font-medium"
+            >
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/80 shadow-[0_0_8px_rgba(34,211,238,0.4)]" /> 1. Connect Wallet</div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/80 shadow-[0_0_8px_rgba(34,211,238,0.4)]" /> 2. Share Intent</div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(52,211,153,0.4)]" /> 3. Review Plan</div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(52,211,153,0.4)]" /> 4. Authorize Action</div>
+            </motion.div>
+          </motion.div>
         )}
 
         {plan && (
-           <div className="flex justify-center md:justify-start">
-             <div className="flex items-center gap-2 overflow-x-auto pb-4 hide-scrollbar">
-               <StepBadge number={1} label="Intent Analysis" status={step1Status} />
-               <StepBadge number={2} label="Plan & Risk" status={step2Status} />
-               <StepBadge number={3} label="Onchain Execution" status={step3Status} />
-             </div>
-           </div>
+          <div className="flex justify-center md:justify-start">
+            <div className="flex items-center gap-2 overflow-x-auto pb-4 hide-scrollbar">
+              <StepBadge number={1} label="Intent Analysis" status={step1Status} />
+              <StepBadge number={2} label="Plan & Risk" status={step2Status} />
+              <StepBadge number={3} label="Onchain Execution" status={step3Status} />
+            </div>
+          </div>
         )}
 
         <div className="relative rounded-[24px] bg-[#09090b]/40 border border-white/[0.06] shadow-2xl p-2 flex flex-col mt-4 backdrop-blur-3xl">
@@ -199,19 +226,19 @@ export function ArbiPilotApp() {
           <div className="relative bg-[#030305]/60 rounded-[18px] border border-white/[0.04] p-6 lg:p-8 flex flex-col gap-5 shadow-inner">
             <div className="flex flex-col gap-1.5">
               <h2 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
-                What would you like to execute?
+                What do you want to achieve?
               </h2>
-              <p className="text-slate-400 text-sm">Enter a natural language intent. The agent will analyze the route, formulate a plan, and require your final signature.</p>
+              <p className="text-slate-400 text-sm font-light">Describe your objective simply. The system will structure a secure strategy for your review.</p>
             </div>
-            
+
             <div className="relative group flex flex-col md:flex-row gap-4 items-end bg-white/[0.03] rounded-2xl p-2 pl-4 border border-white/[0.06] focus-within:border-cyan-500/50 focus-within:bg-white/[0.05] transition-all duration-300 shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]">
               <textarea
                 ref={textareaRef}
                 rows={1}
-                className="w-full resize-none bg-transparent border-none py-3 text-lg text-slate-200 placeholder:text-slate-500/70 focus:outline-none focus:ring-0 leading-relaxed caret-cyan-400"
+                className="w-full resize-none bg-transparent border-none py-3 text-lg text-slate-200 placeholder:text-slate-500/70 focus:outline-none focus:ring-0 leading-relaxed caret-cyan-400 font-light"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="e.g. Swap 10 USDC for WETH with low slippage..."
+                placeholder="e.g. I want to swap 10 USDC for WETH while keeping slippage low..."
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -220,22 +247,22 @@ export function ArbiPilotApp() {
                 }}
               />
               <div className="shrink-0 flex gap-2">
-                 {isConnected && !isCorrectChain && (
-                   <button
-                     onClick={() => switchChainAsync({ chainId: arbitrumSepolia.id })}
-                     disabled={isSwitching}
-                     className="h-12 px-5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold hover:bg-amber-500/20 transition-colors"
-                   >
-                     Switch to Sepolia
-                   </button>
-                 )}
-                 <button
-                   onClick={handlePlan}
-                   disabled={planLoading || !prompt.trim()}
-                   className="h-12 px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-slate-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none transition-all flex items-center gap-2 shadow-[0_2px_15px_rgba(255,255,255,0.15)]"
-                 >
-                   {planLoading ? <Activity size={18} className="animate-spin" /> : <>Generate Plan <ArrowRight size={16} /></>}
-                 </button>
+                {isConnected && !isCorrectChain && (
+                  <button
+                    onClick={() => switchChainAsync({ chainId: arbitrumSepolia.id })}
+                    disabled={isSwitching}
+                    className="h-12 px-5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold hover:bg-amber-500/20 transition-colors"
+                  >
+                    Switch to Sepolia
+                  </button>
+                )}
+                <button
+                  onClick={handlePlan}
+                  disabled={planLoading || !prompt.trim()}
+                  className="h-12 px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-slate-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none transition-all flex items-center gap-2 shadow-[0_2px_15px_rgba(255,255,255,0.15)]"
+                >
+                  {planLoading ? <Activity size={18} className="animate-spin" /> : <>Draft Strategy <ArrowRight size={16} /></>}
+                </button>
               </div>
             </div>
 
@@ -250,15 +277,15 @@ export function ArbiPilotApp() {
 
         {plan && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up mt-4">
-            
+
             <div className="flex flex-col gap-6">
               <CardShell title="Execution Strategy" subtitle="Understanding your intent and resolving a deterministic path.">
                 <div className="text-sm text-slate-300 leading-relaxed mb-6 bg-white/[0.02] p-4 rounded-xl border border-white/[0.05]">
                   {plan.explanation}
                 </div>
-                
+
                 <h4 className="text-xs uppercase tracking-widest text-slate-500 mb-3 font-semibold flex items-center gap-2">
-                   <ListOrdered size={14} /> Step-by-Step Blueprint
+                  <ListOrdered size={14} /> Step-by-Step Blueprint
                 </h4>
                 <div className="space-y-3">
                   {plan.executionPlan.map((step, idx) => (
@@ -273,7 +300,7 @@ export function ArbiPilotApp() {
               </CardShell>
 
               <div className="opacity-80 hover:opacity-100 transition-opacity">
-                 <RegistryPanel />
+                <RegistryPanel />
               </div>
             </div>
 
@@ -281,22 +308,22 @@ export function ArbiPilotApp() {
               <CardShell title="Pre-Execution Guardrails" subtitle="Safety validation and guaranteed execution parameters.">
                 <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)] mb-6">
                   <div className="flex items-center gap-3">
-                     <ShieldCheck size={24} className={plan.riskPreview.level === 'low' ? 'text-emerald-500' : 'text-amber-500'} />
-                     <div>
-                       <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Network Risk Rating</div>
-                       <div className="text-lg font-semibold text-slate-200 capitalize">{plan.riskPreview.level}</div>
-                     </div>
+                    <ShieldCheck size={24} className={plan.riskPreview.level === 'low' ? 'text-emerald-500' : 'text-amber-500'} />
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Network Risk Rating</div>
+                      <div className="text-lg font-semibold text-slate-200 capitalize">{plan.riskPreview.level}</div>
+                    </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]">
-                     <div className="text-xs font-semibold text-slate-500 mb-1">Estimated Output</div>
-                     <div className="text-2xl font-semibold text-slate-100">{plan.preview.estimatedAmountOut} <span className="text-sm text-slate-500">{plan.parsedIntent.tokenOut}</span></div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">Estimated Output</div>
+                    <div className="text-2xl font-semibold text-slate-100">{plan.preview.estimatedAmountOut} <span className="text-sm text-slate-500">{plan.parsedIntent.tokenOut}</span></div>
                   </div>
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]">
-                     <div className="text-xs font-semibold text-slate-500 mb-1">Minimum Guaranteed</div>
-                     <div className="text-xl font-medium text-slate-300 mt-1">{plan.preview.minAmountOut} <span className="text-sm text-slate-500">{plan.parsedIntent.tokenOut}</span></div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">Minimum Guaranteed</div>
+                    <div className="text-xl font-medium text-slate-300 mt-1">{plan.preview.minAmountOut} <span className="text-sm text-slate-500">{plan.parsedIntent.tokenOut}</span></div>
                   </div>
                 </div>
 
@@ -315,31 +342,31 @@ export function ArbiPilotApp() {
                 <button
                   onClick={handleExecute}
                   disabled={!isConnected || !plan?.supported || executeLoading || isSending || Boolean(swapTxHash)}
-                  className="w-full h-14 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 text-black font-semibold text-[15px] transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_30px_rgba(16,185,129,0.5)] disabled:shadow-none disabled:text-slate-500"
+                  className="w-full h-14 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 text-black font-semibold text-[15px] transition-all duration-500 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(16,185,129,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:shadow-[0_4px_30px_rgba(16,185,129,0.6),inset_0_1px_1px_rgba(255,255,255,0.5)] disabled:shadow-none disabled:text-slate-500 active:scale-[0.99] group/exec"
                 >
                   {executeLoading || isSending ? (
-                     <><Activity size={18} className="animate-spin text-emerald-900" /> Awaiting Signature...</>
+                    <><Activity size={18} className="animate-spin text-emerald-900 group-hover/exec:text-emerald-950 transition-colors" /> Awaiting Signature...</>
                   ) : swapTxHash ? (
-                     <><CheckCircle2 size={18} /> Transaction Broadcasted</>
+                    <><CheckCircle2 size={18} className="text-emerald-900 group-hover/exec:text-emerald-950 transition-colors" /> Transaction Broadcasted</>
                   ) : (
-                     <><Sparkles size={18} className="text-emerald-950" /> Approve & Execute Transaction</>
+                    <><Sparkles size={18} className="text-emerald-900 group-hover/exec:text-emerald-950 transition-colors" /> Approve & Execute Transaction</>
                   )}
                 </button>
 
                 {(approvalTxHash || swapTxHash || planError) && (
                   <div className="mt-6 flex flex-col gap-2 pt-6 border-t border-white/[0.05]">
                     <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Transaction Summary</div>
-                    {planError && <div className="p-3 text-sm text-rose-400 bg-rose-500/10 rounded-lg border border-rose-500/20">{planError}</div>}
+                    {planError && <div className="p-3 text-sm text-rose-400 bg-rose-500/10 rounded-lg border border-rose-500/20 shadow-[inset_0_1px_4px_rgba(0,0,0,0.2)]">{planError}</div>}
                     {approvalTxHash && (
-                      <div className="p-3 text-sm flex justify-between items-center bg-white/[0.02] border border-white/[0.05] shadow-inner rounded-lg text-slate-300">
-                        <span>Approval TX: <span className="font-mono text-xs text-slate-400">{approvalTxHash.substring(0,12)}...</span></span>
-                        {approvalExplorerLink && <a href={approvalExplorerLink} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">Verify</a>}
+                      <div className="p-3 text-sm flex justify-between items-center bg-[#09090b]/80 border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)] rounded-lg text-slate-300">
+                        <span>Approval TX: <span className="font-mono text-xs text-slate-400">{approvalTxHash.substring(0, 12)}...</span></span>
+                        {approvalExplorerLink && <a href={approvalExplorerLink} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">Verify</a>}
                       </div>
                     )}
                     {swapTxHash && (
-                      <div className="p-3 text-sm flex justify-between items-center bg-white/[0.02] border border-white/[0.05] shadow-inner rounded-lg text-slate-300">
-                        <span>Swap TX: <span className="font-mono text-xs text-slate-400">{swapTxHash.substring(0,12)}...</span></span>
-                        {swapExplorerLink && <a href={swapExplorerLink} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">Verify</a>}
+                      <div className="p-3 text-sm flex justify-between items-center bg-[#09090b]/80 border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)] rounded-lg text-slate-300">
+                        <span>Swap TX: <span className="font-mono text-xs text-slate-400">{swapTxHash.substring(0, 12)}...</span></span>
+                        {swapExplorerLink && <a href={swapExplorerLink} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">Verify</a>}
                       </div>
                     )}
                   </div>
