@@ -46,7 +46,7 @@ export function WalletConnectButton() {
             type="button"
             onClick={() => connect({ connector: primaryConnector })}
             disabled={isPending}
-            className="flex items-center gap-2 rounded-l-full border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 px-4 py-2 text-xs font-semibold text-cyan-50 shadow-[0_0_15px_rgba(34,211,238,0.15)] transition-all duration-300 disabled:opacity-50 border-r-0 backdrop-blur-md active:scale-[0.98] origin-right"
+            className="flex items-center gap-2 rounded-l-full border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/18 px-4 py-2 text-xs font-semibold text-cyan-50 shadow-[0_0_10px_rgba(34,211,238,0.12)] transition-[background-color,transform,color] duration-200 disabled:opacity-50 border-r-0 active:scale-[0.98] origin-right"
           >
             <Wallet size={14} className="text-cyan-400 group-hover:text-cyan-300 transition-colors" />
             <span>Connect {primaryConnector.name}</span>
@@ -57,7 +57,7 @@ export function WalletConnectButton() {
           <button 
             type="button"
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center justify-center rounded-r-full border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/20 px-2 py-2 text-cyan-400 transition-all duration-300 backdrop-blur-md active:scale-[0.96] origin-left"
+            className="flex items-center justify-center rounded-r-full border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/16 px-2 py-2 text-cyan-400 transition-[background-color,transform,color] duration-200 active:scale-[0.96] origin-left"
           >
            <ChevronDown size={14} className={`transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}/>
           </button>
@@ -65,7 +65,7 @@ export function WalletConnectButton() {
       </div>
 
       {secondaryConnectors.length > 0 && dropdownOpen && (
-        <div className="absolute top-full right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#030305]/95 backdrop-blur-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden py-1 z-50 animate-fade-in-up">
+        <div className="absolute top-full right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#030305]/95 backdrop-blur-md shadow-[0_10px_24px_rgba(0,0,0,0.55),inset_0_1px_1px_rgba(255,255,255,0.04)] overflow-hidden py-1 z-50 animate-fade-in-up">
           {secondaryConnectors.map((connector) => (
             <button
               key={connector.uid}

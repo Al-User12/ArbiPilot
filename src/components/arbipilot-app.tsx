@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { memo, useMemo, useState, useRef, useEffect } from "react";
 import { arbitrumSepolia } from "viem/chains";
 import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShieldAlert, CheckCircle2, AlertTriangle, Activity, Zap, Info, ShieldCheck, ChevronRight, ListOrdered, ArrowRight, Hexagon } from "lucide-react";
+import { Sparkles, ShieldAlert, CheckCircle2, AlertTriangle, Activity, Info, ShieldCheck, ChevronRight, ListOrdered, ArrowRight, Hexagon } from "lucide-react";
 
 import { CardShell } from "@/components/card-shell";
 import { RegistryPanel } from "@/components/registry-panel";
@@ -14,7 +13,17 @@ import type { ExecuteResponsePayload, PlanResponsePayload } from "@/lib/agent/ty
 import { getPublicRuntimeEnv } from "@/lib/config/public-env";
 import { readJsonOrThrow } from "@/lib/http/client";
 
-function StepBadge({ number, label, status }: { number: number; label: string; status: "pending" | "active" | "completed" }) {
+const publicEnv = getPublicRuntimeEnv();
+
+const StepBadge = memo(function StepBadge({
+  number,
+  label,
+  status,
+}: {
+  number: number;
+  label: string;
+  status: "pending" | "active" | "completed";
+}) {
   const isCompleted = status === "completed";
   const isActive = status === "active";
 
@@ -27,7 +36,7 @@ function StepBadge({ number, label, status }: { number: number; label: string; s
       {number < 3 && <ChevronRight size={14} className="ml-2 text-slate-600" />}
     </div>
   );
-}
+});
 
 export function ArbiPilotApp() {
   const { address, isConnected, chainId } = useAccount();
@@ -45,7 +54,6 @@ export function ArbiPilotApp() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCorrectChain = chainId === arbitrumSepolia.id;
-  const publicEnv = getPublicRuntimeEnv();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -142,12 +150,12 @@ export function ArbiPilotApp() {
   return (
     <div className="min-h-screen flex flex-col font-sans relative selection:bg-cyan-500/30 selection:text-white">
 
-      <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#030305]/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#030305]/82 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <motion.div animate={{ rotate: 360 }} transition={{ ease: "linear", duration: 20, repeat: Infinity }} className="text-cyan-400 opacity-90 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+            <div className="text-cyan-400 opacity-90 drop-shadow-[0_0_6px_rgba(34,211,238,0.35)] animate-subtle-spin">
               <Hexagon size={24} strokeWidth={1.5} />
-            </motion.div>
+            </div>
             <h1 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
               ArbiPilot <span className="bg-white/10 text-[9px] uppercase font-bold text-slate-300 px-1.5 py-0.5 rounded-[4px] tracking-widest border border-white/[0.05]">SYS.01</span>
             </h1>
@@ -167,48 +175,31 @@ export function ArbiPilotApp() {
 
         {/* Hero Narrative & Positioning */}
         {!plan && (
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
-            }}
-            className="max-w-3xl flex flex-col gap-6 pt-10 pb-6"
-          >
-            <motion.h2 
-              variants={{
-                hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
-                visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
-              }}
-              className="text-[2.5rem] md:text-[3.25rem] font-medium tracking-tight text-white leading-[1.15] drop-shadow-sm"
+          <div className="max-w-3xl flex flex-col gap-6 pt-10 pb-6">
+            <h2
+              className="text-[2.5rem] md:text-[3.25rem] font-medium tracking-tight text-white leading-[1.15] drop-shadow-sm animate-fade-in-up"
+              style={{ animationDelay: "40ms" }}
             >
               Share your intent.<br className="hidden md:block" />
-              <span className="text-slate-400 font-light">We'll craft the optimal execution strategy.</span>
-            </motion.h2>
-            <motion.p 
-              variants={{
-                hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
-                visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
-              }}
-              className="text-[1.1rem] text-slate-400/90 leading-[1.7] max-w-2xl font-light tracking-wide lg:pr-8"
+              <span className="text-slate-400 font-light">We&apos;ll craft the optimal execution strategy.</span>
+            </h2>
+            <p
+              className="text-[1.1rem] text-slate-400/90 leading-[1.7] max-w-2xl font-light tracking-wide lg:pr-8 animate-fade-in-up"
+              style={{ animationDelay: "120ms" }}
             >
               ArbiPilot turns your natural language into a highly secure, deterministic blueprint. We verify the risks and explain every step transparently, long before you are ever asked to sign a transaction.
-            </motion.p>
+            </p>
             
-            <motion.div 
-              variants={{
-                hidden: { opacity: 0, y: 12 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } }
-              }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-6 border-t border-white/[0.04] text-[13px] text-slate-400 font-medium"
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-6 border-t border-white/[0.04] text-[13px] text-slate-400 font-medium animate-fade-in-up"
+              style={{ animationDelay: "200ms" }}
             >
-              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/80 shadow-[0_0_8px_rgba(34,211,238,0.4)]" /> 1. Connect Wallet</div>
-              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/80 shadow-[0_0_8px_rgba(34,211,238,0.4)]" /> 2. Share Intent</div>
-              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(52,211,153,0.4)]" /> 3. Review Plan</div>
-              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_8px_rgba(52,211,153,0.4)]" /> 4. Authorize Action</div>
-            </motion.div>
-          </motion.div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/80 shadow-[0_0_5px_rgba(34,211,238,0.3)]" /> 1. Connect Wallet</div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/80 shadow-[0_0_5px_rgba(34,211,238,0.3)]" /> 2. Share Intent</div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_5px_rgba(52,211,153,0.3)]" /> 3. Review Plan</div>
+              <div className="flex items-center gap-2.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 shadow-[0_0_5px_rgba(52,211,153,0.3)]" /> 4. Authorize Action</div>
+            </div>
+          </div>
         )}
 
         {plan && (
@@ -221,7 +212,7 @@ export function ArbiPilotApp() {
           </div>
         )}
 
-        <div className="relative rounded-[24px] bg-[#09090b]/40 border border-white/[0.06] shadow-2xl p-2 flex flex-col mt-4 backdrop-blur-3xl">
+        <div className="relative rounded-[24px] bg-[#09090b]/44 border border-white/[0.06] shadow-[0_10px_36px_rgba(0,0,0,0.38)] p-2 flex flex-col mt-4 backdrop-blur-md">
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent rounded-[24px] pointer-events-none" />
           <div className="relative bg-[#030305]/60 rounded-[18px] border border-white/[0.04] p-6 lg:p-8 flex flex-col gap-5 shadow-inner">
             <div className="flex flex-col gap-1.5">
@@ -231,7 +222,7 @@ export function ArbiPilotApp() {
               <p className="text-slate-400 text-sm font-light">Describe your objective simply. The system will structure a secure strategy for your review.</p>
             </div>
 
-            <div className="relative group flex flex-col md:flex-row gap-4 items-end bg-white/[0.03] rounded-2xl p-2 pl-4 border border-white/[0.06] focus-within:border-cyan-500/50 focus-within:bg-white/[0.05] transition-all duration-300 shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]">
+            <div className="relative group flex flex-col md:flex-row gap-4 items-end bg-white/[0.03] rounded-2xl p-2 pl-4 border border-white/[0.06] focus-within:border-cyan-500/50 focus-within:bg-white/[0.05] transition-[border-color,background-color] duration-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.42)]">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -259,7 +250,7 @@ export function ArbiPilotApp() {
                 <button
                   onClick={handlePlan}
                   disabled={planLoading || !prompt.trim()}
-                  className="h-12 px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-slate-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none transition-all flex items-center gap-2 shadow-[0_2px_15px_rgba(255,255,255,0.15)]"
+                  className="h-12 px-6 rounded-xl bg-white text-black font-semibold text-sm hover:bg-slate-200 disabled:bg-white/10 disabled:text-slate-500 disabled:shadow-none transition-[background-color,transform,color] duration-200 flex items-center gap-2 shadow-[0_2px_10px_rgba(255,255,255,0.13)] active:scale-[0.99]"
                 >
                   {planLoading ? <Activity size={18} className="animate-spin" /> : <>Draft Strategy <ArrowRight size={16} /></>}
                 </button>
@@ -342,7 +333,7 @@ export function ArbiPilotApp() {
                 <button
                   onClick={handleExecute}
                   disabled={!isConnected || !plan?.supported || executeLoading || isSending || Boolean(swapTxHash)}
-                  className="w-full h-14 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 text-black font-semibold text-[15px] transition-all duration-500 flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(16,185,129,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:shadow-[0_4px_30px_rgba(16,185,129,0.6),inset_0_1px_1px_rgba(255,255,255,0.5)] disabled:shadow-none disabled:text-slate-500 active:scale-[0.99] group/exec"
+                  className="w-full h-14 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 text-black font-semibold text-[15px] transition-[background-color,transform,color] duration-200 flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(16,185,129,0.26),inset_0_1px_1px_rgba(255,255,255,0.32)] disabled:shadow-none disabled:text-slate-500 active:scale-[0.99] group/exec"
                 >
                   {executeLoading || isSending ? (
                     <><Activity size={18} className="animate-spin text-emerald-900 group-hover/exec:text-emerald-950 transition-colors" /> Awaiting Signature...</>
