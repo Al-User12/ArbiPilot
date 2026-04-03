@@ -18,7 +18,7 @@ Most wallet agents hide execution logic behind model output. ArbiPilot makes the
 - Action: `swap`
 - Recognized but rejected: `bridge`
 - Chain: `arbitrum-sepolia` (`421614`)
-- Tokens: `USDC`, `WETH` (`ETH` prompt alias normalizes to `WETH`)
+- Tokens: dynamic allowlist (`USDC`, `WETH` by default; optional extras via env). `ETH` prompt alias normalizes to `WETH`.
 
 ## Supported User Flow
 
@@ -54,7 +54,8 @@ Most wallet agents hide execution logic behind model output. ArbiPilot makes the
 
 - ATXP server-side planner integration.
 - Camelot Sepolia contract-backed quote via Quoter.
-- Camelot Sepolia router calldata generation (`exactInputSingle`) with deterministic allowlisted targets.
+- Camelot Sepolia router calldata generation (`exactInputSingle` / `exactInput`) with deterministic allowlisted targets.
+- Auto route discovery across allowlisted tokens (direct and multi-hop candidates; best-output route selected).
 - Optional approval tx generation based on live allowance check.
 - Wallet-signed execution path on Arbitrum Sepolia.
 - Agent0 SDK registration script path for registry tx hash generation.
@@ -90,6 +91,7 @@ Most wallet agents hide execution logic behind model output. ArbiPilot makes the
 | `NEXT_PUBLIC_APP_URL` | Yes | Public | App canonical URL |
 | `ARBITRUM_SEPOLIA_USDC_ADDRESS` | Optional | Server | Override USDC allowlist address |
 | `ARBITRUM_SEPOLIA_WETH_ADDRESS` | Optional | Server | Override WETH allowlist address |
+| `ARBITRUM_SEPOLIA_EXTRA_TOKENS_JSON` | Optional | Server | Extra allowlisted tokens for auto pair/route discovery (`{"USDT":{"address":"0x...","decimals":6}}`) |
 | `CAMELOT_SEPOLIA_SWAP_ROUTER_ADDRESS` | Optional | Server | Override Camelot router |
 | `CAMELOT_SEPOLIA_QUOTER_ADDRESS` | Optional | Server | Override Camelot quoter |
 | `REGISTRY_SIGNER_PRIVATE_KEY` | Optional (required for registration execution) | Server | Private key used by `register:agent` script |
@@ -182,13 +184,12 @@ curl -X POST http://localhost:3000/api/registry/register \
 ## Limitations
 
 - Single action (`swap`) and single chain (`arbitrum-sepolia`).
-- Single pair family (`USDC`/`WETH`).
-- No route optimization across multiple DEXes.
+- Route search is constrained to the deterministic token allowlist.
+- No route optimization across multiple DEXes (Camelot only).
 - No persistent database/auth/multi-agent/autonomous loop features.
 
 ## Future Improvements
 
-- Add deterministic multi-hop/path selection within allowlisted pools.
 - Add deterministic price impact estimation from pool state.
 - Add guarded server-side registry execution with explicit operator auth.
 - Add richer swap simulation previews before wallet signing.

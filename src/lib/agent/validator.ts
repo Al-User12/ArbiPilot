@@ -1,7 +1,7 @@
 import { parseUnits } from "viem";
 
 import type { ParsedIntent, ValidationResult } from "@/lib/agent/types";
-import { getTokenAllowlist, MAX_SAFE_SLIPPAGE_BPS } from "@/lib/config/allowlist";
+import { getTokenAllowlist, isSupportedPair, MAX_SAFE_SLIPPAGE_BPS } from "@/lib/config/allowlist";
 
 const MAX_ALLOWED_AMOUNT = 1_000_000;
 
@@ -37,6 +37,20 @@ export function validateParsedIntent(intent: ParsedIntent): ValidationResult {
     return { ok: false, reason: "tokenIn and tokenOut must be different." };
   }
 
+  const allowlist = getTokenAllowlist();
+  if (!(intent.tokenIn in allowlist)) {
+    return { ok: false, reason: `Unsupported tokenIn: ${intent.tokenIn}.` };
+  }
+  if (!(intent.tokenOut in allowlist)) {
+    return { ok: false, reason: `Unsupported tokenOut: ${intent.tokenOut}.` };
+  }
+  if (!isSupportedPair(intent.tokenIn, intent.tokenOut)) {
+    return {
+      ok: false,
+      reason: `Unsupported pair: ${intent.tokenIn} -> ${intent.tokenOut}.`,
+    };
+  }
+
   if (intent.slippageBps <= 0 || intent.slippageBps > MAX_SAFE_SLIPPAGE_BPS) {
     return {
       ok: false,
@@ -45,7 +59,6 @@ export function validateParsedIntent(intent: ParsedIntent): ValidationResult {
   }
 
   try {
-    const allowlist = getTokenAllowlist();
     parseUnits(intent.amount, allowlist[intent.tokenIn].decimals);
   } catch {
     return { ok: false, reason: "Amount precision is invalid for selected token." };

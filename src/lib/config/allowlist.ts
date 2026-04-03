@@ -2,10 +2,10 @@ import { getServerEnv } from "@/lib/config/env";
 
 export const MAX_SAFE_SLIPPAGE_BPS = 300;
 
-export type SupportedTokenSymbol = "USDC" | "WETH";
+export type SupportedTokenSymbol = string;
 
 export type TokenConfig = {
-  symbol: SupportedTokenSymbol;
+  symbol: string;
   decimals: number;
   isNative: false;
   address: `0x${string}`;
@@ -26,6 +26,53 @@ const DEFAULT_CAMELOT_SWAP_ROUTER: `0x${string}` =
 const DEFAULT_CAMELOT_QUOTER: `0x${string}` =
   "0xe49ef2F48539EA7498605CC1B3a242042cb5FC83";
 
+function parseExtraTokenAllowlist(raw: string | undefined) {
+  if (!raw) {
+    return {} as Record<string, TokenConfig>;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Record<
+      string,
+      {
+        address?: unknown;
+        decimals?: unknown;
+      }
+    >;
+    const normalized: Record<string, TokenConfig> = {};
+
+    for (const [symbol, value] of Object.entries(parsed)) {
+      const normalizedSymbol = symbol.trim().toUpperCase();
+      if (!/^[A-Z0-9._-]{2,15}$/.test(normalizedSymbol)) {
+        continue;
+      }
+
+      if (typeof value?.address !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(value.address)) {
+        continue;
+      }
+
+      const decimals =
+        typeof value.decimals === "number" && Number.isInteger(value.decimals)
+          ? value.decimals
+          : Number.NaN;
+      if (!Number.isFinite(decimals) || decimals < 0 || decimals > 36) {
+        continue;
+      }
+
+      normalized[normalizedSymbol] = {
+        symbol: normalizedSymbol,
+        decimals,
+        isNative: false,
+        address: value.address as `0x${string}`,
+      };
+    }
+
+    return normalized;
+  } catch {
+    return {} as Record<string, TokenConfig>;
+  }
+}
+
 export function getTokenAllowlist() {
   let usdcAddress: `0x${string}` = DEFAULT_USDC_ARB_SEPOLIA;
   let wethAddress: `0x${string}` = DEFAULT_WETH_ARB_SEPOLIA;
@@ -42,7 +89,7 @@ export function getTokenAllowlist() {
     // Health route and static rendering may call this without fully configured env.
   }
 
-  const allowlist: Record<SupportedTokenSymbol, TokenConfig> = {
+  const allowlist: Record<string, TokenConfig> = {
     USDC: {
       symbol: "USDC",
       decimals: 18,
@@ -56,6 +103,11 @@ export function getTokenAllowlist() {
       address: wethAddress,
     },
   };
+
+  const extra = parseExtraTokenAllowlist(process.env.ARBITRUM_SEPOLIA_EXTRA_TOKENS_JSON);
+  for (const [symbol, cfg] of Object.entries(extra)) {
+    allowlist[symbol] = cfg;
+  }
 
   return allowlist;
 }
@@ -84,5 +136,6 @@ export function getCamelotContracts(): CamelotContracts {
 }
 
 export function isSupportedPair(tokenIn: SupportedTokenSymbol, tokenOut: SupportedTokenSymbol) {
-  return tokenIn !== tokenOut;
+  const allowlist = getTokenAllowlist();
+  return tokenIn !== tokenOut && tokenIn in allowlist && tokenOut in allowlist;
 }

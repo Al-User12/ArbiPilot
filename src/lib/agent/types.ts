@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 export type SupportedChain = "arbitrum-sepolia";
-export type SupportedToken = "USDC" | "WETH";
+export type SupportedToken = string;
 export type RiskLevel = "low" | "medium" | "high";
 
 export interface SwapIntent {

@@ -45,6 +45,7 @@ const serverEnvSchema = z.object({
       "CAMELOT_SEPOLIA_QUOTER_ADDRESS must be a valid address",
     )
     .optional(),
+  ARBITRUM_SEPOLIA_EXTRA_TOKENS_JSON: z.string().optional(),
   REGISTRY_SIGNER_PRIVATE_KEY: z
     .string()
     .refine((value) => isHex(value) && value.length === 66, {

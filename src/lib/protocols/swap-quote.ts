@@ -48,6 +48,38 @@ export interface SwapQuoteAdapter {
 class CamelotQuoterAdapter implements SwapQuoteAdapter {
   name = "camelot-quoter" as const;
 
+  private generateRouteCandidates(
+    symbols: SupportedToken[],
+    tokenIn: SupportedToken,
+    tokenOut: SupportedToken,
+    maxHops: number,
+  ) {
+    const routes: SupportedToken[][] = [];
+
+    function dfs(current: SupportedToken, path: SupportedToken[]) {
+      const hopCount = path.length - 1;
+      if (hopCount > maxHops) {
+        return;
+      }
+      if (current === tokenOut) {
+        routes.push([...path]);
+        return;
+      }
+      for (const next of symbols) {
+        if (path.includes(next)) {
+          continue;
+        }
+        dfs(next, [...path, next]);
+      }
+    }
+
+    dfs(tokenIn, [tokenIn]);
+
+    return routes
+      .filter((route) => route[route.length - 1] === tokenOut)
+      .sort((a, b) => a.length - b.length);
+  }
+
   private async quoteSingleHop(
     tokenInAddress: `0x${string}`,
     tokenOutAddress: `0x${string}`,
@@ -69,17 +101,22 @@ class CamelotQuoterAdapter implements SwapQuoteAdapter {
 
   async getQuote(intent: SwapIntent): Promise<SwapQuote> {
     const allowlist = getTokenAllowlist();
+    if (!(intent.tokenIn in allowlist) || !(intent.tokenOut in allowlist)) {
+      throw new Error(`Unsupported token pair: ${intent.tokenIn} -> ${intent.tokenOut}.`);
+    }
+
     const tokenIn = allowlist[intent.tokenIn];
     const tokenOut = allowlist[intent.tokenOut];
     const amountInRaw = parseUnits(intent.amount, tokenIn.decimals);
 
-    const candidates: SupportedToken[][] = [[intent.tokenIn, intent.tokenOut]];
-    const intermediateTokens = (Object.keys(allowlist) as SupportedToken[]).filter(
-      (symbol) => symbol !== intent.tokenIn && symbol !== intent.tokenOut,
+    const candidates = this.generateRouteCandidates(
+      Object.keys(allowlist) as SupportedToken[],
+      intent.tokenIn,
+      intent.tokenOut,
+      3,
     );
-
-    for (const middle of intermediateTokens) {
-      candidates.push([intent.tokenIn, middle, intent.tokenOut]);
+    if (candidates.length === 0) {
+      throw new Error(`No route candidates available for ${intent.tokenIn} -> ${intent.tokenOut}.`);
     }
 
     let best:

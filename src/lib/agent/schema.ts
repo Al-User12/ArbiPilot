@@ -2,7 +2,12 @@ import { isAddress, isHash, type Address, type Hash } from "viem";
 import { z } from "zod";
 
 export const SupportedChainSchema = z.enum(["arbitrum-sepolia"]);
-export const SupportedTokenSchema = z.enum(["USDC", "WETH"]);
+export const SupportedTokenSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(15)
+  .regex(/^[A-Z0-9._-]+$/, "Token symbol must be uppercase alphanumeric.");
 export const ParsedActionSchema = z.enum(["swap", "bridge"]);
 
 export const AddressSchema = z.custom<Address>(

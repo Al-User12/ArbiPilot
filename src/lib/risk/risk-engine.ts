@@ -45,7 +45,8 @@ export function assessSwapRisk(params: {
   let sufficientBalance = true;
 
   if (balances) {
-    const available = balances[intent.tokenIn].raw;
+    const tokenBalance = balances[intent.tokenIn];
+    const available = tokenBalance?.raw ?? 0n;
     sufficientBalance = available >= amountInRaw;
     if (!sufficientBalance) {
       level = "high";

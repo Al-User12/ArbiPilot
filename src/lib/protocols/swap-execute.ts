@@ -1,4 +1,5 @@
 import {
+  concatHex,
   encodeFunctionData,
   parseUnits,
   toHex,
@@ -41,6 +42,27 @@ const erc20ApproveAbi = [
 const swapRouterAbi = [
   {
     type: "function",
+    name: "exactInput",
+    // Algebra SwapRouter interface:
+    // exactInput((bytes path,address recipient,uint256 deadline,uint256 amountIn,uint256 amountOutMinimum))
+    stateMutability: "payable",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "path", type: "bytes" },
+          { name: "recipient", type: "address" },
+          { name: "deadline", type: "uint256" },
+          { name: "amountIn", type: "uint256" },
+          { name: "amountOutMinimum", type: "uint256" },
+        ],
+      },
+    ],
+    outputs: [{ name: "amountOut", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "exactInputSingle",
     // Algebra SwapRouter interface:
     // exactInputSingle((address tokenIn,address tokenOut,address recipient,uint256 deadline,uint256 amountIn,uint256 amountOutMinimum,uint160 limitSqrtPrice))
@@ -63,6 +85,31 @@ const swapRouterAbi = [
     outputs: [{ name: "amountOut", type: "uint256" }],
   },
 ] as const;
+
+const ALGEBRA_DEFAULT_DEPLOYER = "0x0000000000000000000000000000000000000000" as const;
+
+function encodeAlgebraPath(routePath: string[], tokenAddressBySymbol: Record<string, `0x${string}`>) {
+  if (routePath.length < 2) {
+    throw new Error("Route path must contain at least 2 tokens.");
+  }
+
+  const parts: `0x${string}`[] = [];
+  const first = tokenAddressBySymbol[routePath[0]];
+  if (!first) {
+    throw new Error(`Missing token address for ${routePath[0]}.`);
+  }
+  parts.push(first);
+
+  for (let i = 1; i < routePath.length; i += 1) {
+    const next = tokenAddressBySymbol[routePath[i]];
+    if (!next) {
+      throw new Error(`Missing token address for ${routePath[i]}.`);
+    }
+    parts.push(ALGEBRA_DEFAULT_DEPLOYER, next);
+  }
+
+  return concatHex(parts);
+}
 
 export interface SwapExecutionPreparation {
   mode: "router_swap" | "blocked";
@@ -172,23 +219,44 @@ export async function prepareDeterministicSwapExecution(params: {
 
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 20);
 
+  const tokenAddressBySymbol = Object.fromEntries(
+    Object.entries(allowlist).map(([symbol, cfg]) => [symbol, cfg.address]),
+  ) as Record<string, `0x${string}`>;
+
+  const swapCalldata =
+    quote.hopCount > 1
+      ? encodeFunctionData({
+          abi: swapRouterAbi,
+          functionName: "exactInput",
+          args: [
+            {
+              path: encodeAlgebraPath(quote.routePath, tokenAddressBySymbol),
+              recipient: account,
+              deadline,
+              amountIn: amountInRaw,
+              amountOutMinimum: quote.minAmountOutRaw,
+            },
+          ],
+        })
+      : encodeFunctionData({
+          abi: swapRouterAbi,
+          functionName: "exactInputSingle",
+          args: [
+            {
+              tokenIn: tokenIn.address,
+              tokenOut: tokenOut.address,
+              recipient: account,
+              deadline,
+              amountIn: amountInRaw,
+              amountOutMinimum: quote.minAmountOutRaw,
+              limitSqrtPrice: 0n,
+            },
+          ],
+        });
+
   const swapTxRequest: PreparedTxRequest = {
     to: contracts.swapRouter,
-    data: encodeFunctionData({
-      abi: swapRouterAbi,
-      functionName: "exactInputSingle",
-      args: [
-        {
-          tokenIn: tokenIn.address,
-          tokenOut: tokenOut.address,
-          recipient: account,
-          deadline,
-          amountIn: amountInRaw,
-          amountOutMinimum: quote.minAmountOutRaw,
-          limitSqrtPrice: 0n,
-        },
-      ],
-    }),
+    data: swapCalldata,
     value: toHex(0n),
     chainId: CHAIN_CONFIG.id,
     ...feeParams,

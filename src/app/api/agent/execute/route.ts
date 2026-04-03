@@ -52,15 +52,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (quote.hopCount > 1) {
-      return NextResponse.json(
-        buildBlockedResponse(
-          `Route was auto-detected as multi-hop (${quote.routePath.join(" -> ")}), but this MVP executes single-hop swaps only.`,
-        ),
-        { status: 400 },
-      );
-    }
-
     const execution = await prepareDeterministicSwapExecution({
       intent: input.intent,
       quote,

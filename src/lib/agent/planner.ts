@@ -12,8 +12,8 @@ Schema:
 {
   "action": "swap" | "bridge",
   "chain": "arbitrum-sepolia",
-  "tokenIn": "USDC" | "WETH",
-  "tokenOut": "USDC" | "WETH",
+  "tokenIn": "TOKEN_SYMBOL",
+  "tokenOut": "TOKEN_SYMBOL",
   "amount": "decimal string",
   "slippageBps": number (1-500)
 }
@@ -23,7 +23,7 @@ Rules:
 - Default chain to "arbitrum-sepolia".
 - Default slippageBps to 50 when user says safe slippage or omits slippage.
 - Token aliases: ETH must be normalized to WETH.
-- Use uppercase token symbols.
+- Use uppercase token symbols (for example USDC, WETH, USDT).
 - amount must be decimal string with no commas.`;
 
 function normalizeTokenSymbol(value: unknown) {

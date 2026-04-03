@@ -14,45 +14,36 @@ const erc20BalanceAbi = [
 ] as const;
 
 export interface TokenBalance {
-  symbol: "USDC" | "WETH";
+  symbol: string;
   raw: bigint;
   formatted: string;
 }
 
-export interface BalanceSnapshot {
-  USDC: TokenBalance;
-  WETH: TokenBalance;
-}
+export type BalanceSnapshot = Record<string, TokenBalance>;
 
 export async function getBalancesSnapshot(account: Address): Promise<BalanceSnapshot> {
   const client = getArbitrumSepoliaPublicClient();
   const allowlist = getTokenAllowlist();
+  const tokenEntries = Object.entries(allowlist);
 
-  const [usdcRaw, wethRaw] = await Promise.all([
-    client.readContract({
-      address: allowlist.USDC.address,
-      abi: erc20BalanceAbi,
-      functionName: "balanceOf",
-      args: [account],
-    }),
-    client.readContract({
-      address: allowlist.WETH.address,
-      abi: erc20BalanceAbi,
-      functionName: "balanceOf",
-      args: [account],
-    }),
-  ]);
+  const rawBalances = await Promise.all(
+    tokenEntries.map(([, token]) =>
+      client.readContract({
+        address: token.address,
+        abi: erc20BalanceAbi,
+        functionName: "balanceOf",
+        args: [account],
+      }),
+    ),
+  );
 
-  return {
-    USDC: {
-      symbol: "USDC",
-      raw: usdcRaw,
-      formatted: formatUnits(usdcRaw, allowlist.USDC.decimals),
-    },
-    WETH: {
-      symbol: "WETH",
-      raw: wethRaw,
-      formatted: formatUnits(wethRaw, allowlist.WETH.decimals),
-    },
-  };
+  return tokenEntries.reduce<BalanceSnapshot>((acc, [symbol, token], index) => {
+    const raw = rawBalances[index];
+    acc[symbol] = {
+      symbol,
+      raw,
+      formatted: formatUnits(raw, token.decimals),
+    };
+    return acc;
+  }, {});
 }

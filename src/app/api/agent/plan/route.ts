@@ -163,15 +163,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (quote.hopCount > 1) {
-      return NextResponse.json(
-        buildUnsupportedResponse(
-          intent,
-          `Route was auto-detected as multi-hop (${quote.routePath.join(" -> ")}), but this MVP executes single-hop swaps only.`,
-        ),
-      );
-    }
-
     const balances = input.walletAddress
       ? await getBalancesSnapshot(input.walletAddress)
       : null;
