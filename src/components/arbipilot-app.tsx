@@ -49,6 +49,7 @@ export function ArbiPilotApp() {
   const [planLoading, setPlanLoading] = useState(false);
   const [executeLoading, setExecuteLoading] = useState(false);
   const [executionInfo, setExecutionInfo] = useState<ExecuteResponsePayload | null>(null);
+  const [wrapTxHash, setWrapTxHash] = useState<`0x${string}` | null>(null);
   const [approvalTxHash, setApprovalTxHash] = useState<`0x${string}` | null>(null);
   const [swapTxHash, setSwapTxHash] = useState<`0x${string}` | null>(null);
 
@@ -66,6 +67,11 @@ export function ArbiPilotApp() {
     if (!approvalTxHash || !executionInfo?.explorerBaseUrl) return null;
     return `${executionInfo.explorerBaseUrl}/tx/${approvalTxHash}`;
   }, [approvalTxHash, executionInfo?.explorerBaseUrl]);
+
+  const wrapExplorerLink = useMemo(() => {
+    if (!wrapTxHash || !executionInfo?.explorerBaseUrl) return null;
+    return `${executionInfo.explorerBaseUrl}/tx/${wrapTxHash}`;
+  }, [wrapTxHash, executionInfo?.explorerBaseUrl]);
 
   const swapExplorerLink = useMemo(() => {
     if (!swapTxHash || !executionInfo?.explorerBaseUrl) return null;
@@ -90,6 +96,7 @@ export function ArbiPilotApp() {
     if (!prompt.trim()) return;
     setPlanError(null);
     setExecutionInfo(null);
+    setWrapTxHash(null);
     setApprovalTxHash(null);
     setSwapTxHash(null);
     setPlanLoading(true);
@@ -115,6 +122,7 @@ export function ArbiPilotApp() {
 
     setExecuteLoading(true);
     setPlanError(null);
+    setWrapTxHash(null);
     setApprovalTxHash(null);
     setSwapTxHash(null);
 
@@ -133,6 +141,12 @@ export function ArbiPilotApp() {
       if (!data.ok || !data.txRequest) {
         setPlanError(data.message || "Failed to generate transaction payload.");
         return;
+      }
+
+      if (data.wrapTxRequest) {
+        setWrapTxHash(
+          await sendTransactionAsync(toSendTransactionRequest(data.wrapTxRequest)),
+        );
       }
 
       if (data.approvalTxRequest) {
@@ -350,10 +364,16 @@ export function ArbiPilotApp() {
                   )}
                 </button>
 
-                {(approvalTxHash || swapTxHash || planError) && (
+                {(wrapTxHash || approvalTxHash || swapTxHash || planError) && (
                   <div className="mt-6 flex flex-col gap-2 pt-6 border-t border-white/[0.05]">
                     <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">Transaction Summary</div>
                     {planError && <div className="p-3 text-sm text-rose-400 bg-rose-500/10 rounded-lg border border-rose-500/20 shadow-[inset_0_1px_4px_rgba(0,0,0,0.2)] break-all">{planError}</div>}
+                    {wrapTxHash && (
+                      <div className="p-3 text-sm flex justify-between items-center bg-[#09090b]/80 border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)] rounded-lg text-slate-300">
+                        <span>Wrap TX: <span className="font-mono text-xs text-slate-400">{wrapTxHash.substring(0, 12)}...</span></span>
+                        {wrapExplorerLink && <a href={wrapExplorerLink} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">Verify</a>}
+                      </div>
+                    )}
                     {approvalTxHash && (
                       <div className="p-3 text-sm flex justify-between items-center bg-[#09090b]/80 border border-white/[0.04] shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)] rounded-lg text-slate-300">
                         <span>Approval TX: <span className="font-mono text-xs text-slate-400">{approvalTxHash.substring(0, 12)}...</span></span>

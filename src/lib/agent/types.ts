@@ -72,6 +72,7 @@ export interface ExecuteResponsePayload {
   ok: boolean;
   mode: "router_swap" | "blocked";
   message: string;
+  wrapTxRequest?: PreparedTxRequest;
   approvalTxRequest?: PreparedTxRequest;
   txRequest?: PreparedTxRequest;
   warnings: string[];

@@ -27,6 +27,16 @@ const erc20AllowanceAbi = [
   },
 ] as const;
 
+const erc20BalanceAbi = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
 const erc20ApproveAbi = [
   {
     type: "function",
@@ -37,6 +47,16 @@ const erc20ApproveAbi = [
       { name: "amount", type: "uint256" },
     ],
     outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+const wethAbi = [
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "payable",
+    inputs: [],
+    outputs: [],
   },
 ] as const;
 
@@ -116,6 +136,7 @@ export interface SwapExecutionPreparation {
   mode: "router_swap" | "blocked";
   message: string;
   warnings: string[];
+  wrapTxRequest?: PreparedTxRequest;
   approvalTxRequest?: PreparedTxRequest;
   txRequest?: PreparedTxRequest;
 }
@@ -201,8 +222,42 @@ export async function prepareDeterministicSwapExecution(params: {
   const tokenOut = allowlist[intent.tokenOut];
   const amountInRaw = parseUnits(intent.amount, tokenIn.decimals);
 
-  const approvalRequired = await isApprovalRequiredForSwap({ intent, account });
   const feeParams = await getPreparedFeeParams();
+  const tokenInBalanceRaw = await client.readContract({
+    address: tokenIn.address,
+    abi: erc20BalanceAbi,
+    functionName: "balanceOf",
+    args: [account],
+  });
+
+  let wrapTxRequest: PreparedTxRequest | undefined;
+  let amountToWrap = 0n;
+
+  if (tokenInBalanceRaw < amountInRaw) {
+    if (intent.tokenIn === "WETH") {
+      amountToWrap = amountInRaw - tokenInBalanceRaw;
+      wrapTxRequest = {
+        to: tokenIn.address,
+        data: encodeFunctionData({
+          abi: wethAbi,
+          functionName: "deposit",
+        }),
+        value: toHex(amountToWrap),
+        chainId: CHAIN_CONFIG.id,
+        ...feeParams,
+      };
+    } else {
+      return {
+        mode: "blocked",
+        message: `Insufficient ${intent.tokenIn} balance for requested amount (${intent.amount}).`,
+        warnings: [
+          `Detected ${formatUnits(tokenInBalanceRaw, tokenIn.decimals)} ${intent.tokenIn} on allowlisted contract ${tokenIn.address}.`,
+        ],
+      };
+    }
+  }
+
+  const approvalRequired = await isApprovalRequiredForSwap({ intent, account });
 
   const approvalTxRequest = approvalRequired
     ? {
@@ -268,6 +323,12 @@ export async function prepareDeterministicSwapExecution(params: {
     `Selected route: ${quote.routePath.join(" -> ")} (${quote.hopCount} hop${quote.hopCount > 1 ? "s" : ""}).`,
   ];
 
+  if (wrapTxRequest) {
+    warnings.push(
+      `Auto-wrap will convert ${formatUnits(amountToWrap, 18)} ETH to WETH before approval/swap.`,
+    );
+  }
+
   if (approvalRequired) {
     warnings.push(
       `ERC-20 approval tx is required before swap for ${intent.tokenIn}.`,
@@ -275,8 +336,16 @@ export async function prepareDeterministicSwapExecution(params: {
   }
 
   try {
-    const [nativeBalanceRaw, approvalGas, swapGas] = await Promise.all([
+    const [nativeBalanceRaw, wrapGas, approvalGas, swapGas] = await Promise.all([
       client.getBalance({ address: account }),
+      wrapTxRequest
+        ? client.estimateGas({
+            account,
+            to: wrapTxRequest.to,
+            data: wrapTxRequest.data,
+            value: BigInt(wrapTxRequest.value),
+          })
+        : Promise.resolve(0n),
       approvalTxRequest
         ? client.estimateGas({
             account,
@@ -299,12 +368,13 @@ export async function prepareDeterministicSwapExecution(params: {
       : feeParams.gasPrice
         ? BigInt(feeParams.gasPrice)
         : fallbackGasPrice;
-    const estimatedGasCost = (approvalGas + swapGas) * feePerGas;
+    const estimatedGasCost = (wrapGas + approvalGas + swapGas) * feePerGas;
+    const requiredNativeRaw = amountToWrap + estimatedGasCost;
 
-    if (nativeBalanceRaw < estimatedGasCost) {
+    if (nativeBalanceRaw < requiredNativeRaw) {
       return {
         mode: "blocked",
-        message: `Insufficient gas balance on Arbitrum Sepolia. Detected ${formatUnits(nativeBalanceRaw, 18)} ETH, estimated required ~${formatUnits(estimatedGasCost, 18)} ETH for approval + swap.`,
+        message: `Insufficient ETH on Arbitrum Sepolia. Detected ${formatUnits(nativeBalanceRaw, 18)} ETH, estimated required ~${formatUnits(requiredNativeRaw, 18)} ETH (${formatUnits(amountToWrap, 18)} ETH wrap + ${formatUnits(estimatedGasCost, 18)} ETH gas).`,
         warnings: [
           "Top up ETH on Arbitrum Sepolia (not another network), then retry.",
           ...warnings,
@@ -317,9 +387,11 @@ export async function prepareDeterministicSwapExecution(params: {
 
   return {
     mode: "router_swap",
-    message:
-      "Prepared real Camelot Sepolia swap calldata. Execute optional approval first, then swap.",
+    message: wrapTxRequest
+      ? "Prepared Camelot Sepolia swap. Execution sequence: auto-wrap ETH to WETH, optional approval, then swap."
+      : "Prepared real Camelot Sepolia swap calldata. Execute optional approval first, then swap.",
     warnings,
+    wrapTxRequest,
     approvalTxRequest,
     txRequest: swapTxRequest,
   };

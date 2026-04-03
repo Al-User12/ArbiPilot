@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       ok: true,
       mode: execution.mode,
       message: execution.message,
+      wrapTxRequest: execution.wrapTxRequest,
       approvalTxRequest: execution.approvalTxRequest,
       txRequest: execution.txRequest,
       warnings: execution.warnings,

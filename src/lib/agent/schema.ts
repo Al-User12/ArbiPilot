@@ -140,6 +140,7 @@ export const ExecuteResponseSchema = z
     ok: z.boolean(),
     mode: z.enum(["router_swap", "blocked"]),
     message: z.string(),
+    wrapTxRequest: TxRequestSchema.optional(),
     approvalTxRequest: TxRequestSchema.optional(),
     txRequest: TxRequestSchema.optional(),
     warnings: z.array(z.string()),
