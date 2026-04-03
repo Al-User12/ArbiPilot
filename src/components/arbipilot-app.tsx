@@ -72,6 +72,20 @@ export function ArbiPilotApp() {
     return `${executionInfo.explorerBaseUrl}/tx/${swapTxHash}`;
   }, [swapTxHash, executionInfo?.explorerBaseUrl]);
 
+  function toSendTransactionRequest(tx: NonNullable<ExecuteResponsePayload["txRequest"]>) {
+    return {
+      to: tx.to,
+      data: tx.data,
+      value: BigInt(tx.value),
+      chainId: tx.chainId,
+      ...(tx.maxFeePerGas ? { maxFeePerGas: BigInt(tx.maxFeePerGas) } : {}),
+      ...(tx.maxPriorityFeePerGas
+        ? { maxPriorityFeePerGas: BigInt(tx.maxPriorityFeePerGas) }
+        : {}),
+      ...(tx.gasPrice ? { gasPrice: BigInt(tx.gasPrice) } : {}),
+    } as const;
+  }
+
   async function handlePlan() {
     if (!prompt.trim()) return;
     setPlanError(null);
@@ -122,20 +136,12 @@ export function ArbiPilotApp() {
       }
 
       if (data.approvalTxRequest) {
-        setApprovalTxHash(await sendTransactionAsync({
-          to: data.approvalTxRequest.to,
-          data: data.approvalTxRequest.data,
-          value: BigInt(data.approvalTxRequest.value),
-          chainId: data.approvalTxRequest.chainId,
-        }));
+        setApprovalTxHash(
+          await sendTransactionAsync(toSendTransactionRequest(data.approvalTxRequest)),
+        );
       }
 
-      setSwapTxHash(await sendTransactionAsync({
-        to: data.txRequest.to,
-        data: data.txRequest.data,
-        value: BigInt(data.txRequest.value),
-        chainId: data.txRequest.chainId,
-      }));
+      setSwapTxHash(await sendTransactionAsync(toSendTransactionRequest(data.txRequest)));
     } catch (error) {
       setPlanError(error instanceof Error ? error.message : "Execution declined or failed");
     } finally {

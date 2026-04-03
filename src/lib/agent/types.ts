@@ -63,6 +63,9 @@ export interface PreparedTxRequest {
   data: `0x${string}`;
   value: `0x${string}`;
   chainId: number;
+  maxFeePerGas?: `0x${string}`;
+  maxPriorityFeePerGas?: `0x${string}`;
+  gasPrice?: `0x${string}`;
 }
 
 export interface ExecuteResponsePayload {

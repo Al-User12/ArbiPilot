@@ -124,6 +124,9 @@ const TxRequestSchema = z
     data: HexSchema,
     value: HexSchema,
     chainId: z.number().int().positive(),
+    maxFeePerGas: HexSchema.optional(),
+    maxPriorityFeePerGas: HexSchema.optional(),
+    gasPrice: HexSchema.optional(),
   })
   .strict();
 

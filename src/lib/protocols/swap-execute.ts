@@ -4,6 +4,7 @@ import {
   toHex,
   type Address,
 } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 
 import type { PreparedTxRequest, SwapIntent } from "@/lib/agent/types";
 import { getArbitrumSepoliaPublicClient } from "@/lib/chain/client";
@@ -71,6 +72,42 @@ export interface SwapExecutionPreparation {
   txRequest?: PreparedTxRequest;
 }
 
+function applyFeeBuffer(value: bigint) {
+  return (value * 12n) / 10n + 1n;
+}
+
+async function getPreparedFeeParams() {
+  const client = getArbitrumSepoliaPublicClient();
+
+  try {
+    const estimated = await client.estimateFeesPerGas({
+      chain: arbitrumSepolia,
+      type: "eip1559",
+    });
+
+    if (
+      typeof estimated.maxFeePerGas === "bigint" &&
+      typeof estimated.maxPriorityFeePerGas === "bigint"
+    ) {
+      return {
+        maxFeePerGas: toHex(applyFeeBuffer(estimated.maxFeePerGas)),
+        maxPriorityFeePerGas: toHex(applyFeeBuffer(estimated.maxPriorityFeePerGas)),
+      } satisfies Pick<PreparedTxRequest, "maxFeePerGas" | "maxPriorityFeePerGas">;
+    }
+  } catch {
+    // Fallback to legacy gas price below.
+  }
+
+  try {
+    const gasPrice = await client.getGasPrice();
+    return {
+      gasPrice: toHex(applyFeeBuffer(gasPrice)),
+    } satisfies Pick<PreparedTxRequest, "gasPrice">;
+  } catch {
+    return {};
+  }
+}
+
 export async function prepareDeterministicSwapExecution(params: {
   intent: SwapIntent;
   quote: SwapQuote;
@@ -102,6 +139,7 @@ export async function prepareDeterministicSwapExecution(params: {
   });
 
   const approvalRequired = allowance < amountInRaw;
+  const feeParams = await getPreparedFeeParams();
 
   const approvalTxRequest = approvalRequired
     ? {
@@ -113,6 +151,7 @@ export async function prepareDeterministicSwapExecution(params: {
         }),
         value: "0x0" as const,
         chainId: CHAIN_CONFIG.id,
+        ...feeParams,
       }
     : undefined;
 
@@ -137,6 +176,7 @@ export async function prepareDeterministicSwapExecution(params: {
     }),
     value: toHex(0n),
     chainId: CHAIN_CONFIG.id,
+    ...feeParams,
   };
 
   const warnings = [

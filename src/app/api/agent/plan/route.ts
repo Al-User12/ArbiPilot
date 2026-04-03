@@ -11,6 +11,60 @@ import { buildSwapExplanation } from "@/lib/risk/explain";
 import { assessSwapRisk } from "@/lib/risk/risk-engine";
 import { getErrorMessage, jsonError } from "@/lib/http/errors";
 
+function isInformationalPrompt(prompt: string) {
+  const value = prompt.toLowerCase();
+
+  const infoHints = [
+    "ca ",
+    "contract address",
+    "token address",
+    "alamat kontrak",
+    "alamat token",
+    "berapa ca",
+    "what is ca",
+  ];
+
+  const executionHints = [
+    "swap",
+    "bridge",
+    "tukar",
+    "convert",
+    "sell",
+    "buy",
+    " from ",
+    " to ",
+    "->",
+  ];
+
+  const hasInfoHint = infoHints.some((hint) => value.includes(hint));
+  const hasExecutionHint = executionHints.some((hint) => value.includes(hint));
+
+  return hasInfoHint && !hasExecutionHint;
+}
+
+function mapValidationMessage(prompt: string, message: string) {
+  const lower = message.toLowerCase();
+  const hasNumber = /\d/.test(prompt);
+
+  if (
+    (lower.includes("amount must be greater than zero") ||
+      lower.includes("amount must be a positive decimal value")) &&
+    isInformationalPrompt(prompt)
+  ) {
+    return "This looks like an informational prompt (for example, asking for a token contract address). This MVP currently supports swap planning only. Example: swap 10 USDC to WETH.";
+  }
+
+  if (
+    (lower.includes("amount must be greater than zero") ||
+      lower.includes("amount must be a positive decimal value")) &&
+    !hasNumber
+  ) {
+    return "Swap amount was not detected. Please include a numeric amount, for example: swap 10 USDC to WETH.";
+  }
+
+  return message;
+}
+
 function buildUnsupportedResponse(intent: ParsedIntent, message: string): PlanResponsePayload {
   return {
     supported: false,
@@ -77,8 +131,13 @@ export async function POST(request: Request) {
     const validation = validateParsedIntent(intent);
 
     if (!validation.ok) {
+      const mappedMessage = mapValidationMessage(
+        input.prompt,
+        validation.reason ?? "Unsupported intent",
+      );
+
       return NextResponse.json(
-        buildUnsupportedResponse(intent, validation.reason ?? "Unsupported intent"),
+        buildUnsupportedResponse(intent, mappedMessage),
       );
     }
 

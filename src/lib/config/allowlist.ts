@@ -45,7 +45,7 @@ export function getTokenAllowlist() {
   const allowlist: Record<SupportedTokenSymbol, TokenConfig> = {
     USDC: {
       symbol: "USDC",
-      decimals: 6,
+      decimals: 18,
       isNative: false,
       address: usdcAddress,
     },
