@@ -104,7 +104,12 @@ export async function checkSwapPricingSanity(params: {
   }
 
   if (!ethUsdPrice) {
-    return { available: false, isOutlier: false };
+    return {
+      available: false,
+      isOutlier: false,
+      message:
+        "Reference price feed is unavailable. Set ARBITRUM_SEPOLIA_ETH_USD_FEED_ADDRESS to enable pricing protection.",
+    };
   }
 
   const expectedOut =

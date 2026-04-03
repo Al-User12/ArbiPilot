@@ -75,7 +75,12 @@ export async function POST(request: Request) {
 
     if (execution.mode === "blocked" || !execution.txRequest) {
       return NextResponse.json(
-        buildBlockedResponse(execution.message, execution.warnings),
+        buildBlockedResponse(execution.message, [
+          ...execution.warnings,
+          ...(pricingSanity.available || !pricingSanity.message
+            ? []
+            : [pricingSanity.message]),
+        ]),
         { status: 400 },
       );
     }
@@ -87,7 +92,12 @@ export async function POST(request: Request) {
       wrapTxRequest: execution.wrapTxRequest,
       approvalTxRequest: execution.approvalTxRequest,
       txRequest: execution.txRequest,
-      warnings: execution.warnings,
+      warnings: [
+        ...execution.warnings,
+        ...(pricingSanity.available || !pricingSanity.message
+          ? []
+          : [pricingSanity.message]),
+      ],
       explorerBaseUrl: CHAIN_CONFIG.explorerBaseUrl,
     };
 

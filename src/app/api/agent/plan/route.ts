@@ -269,6 +269,9 @@ export async function POST(request: Request) {
       warnings: [
         "Quote is contract-backed via Camelot Quoter on Arbitrum Sepolia.",
         "Execution is restricted to allowlisted Camelot router + token addresses only.",
+        ...(pricingSanity.available || !pricingSanity.message
+          ? []
+          : [pricingSanity.message]),
       ],
     };
 
